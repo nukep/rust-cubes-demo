@@ -1,0 +1,23 @@
+[package]
+
+name = "rust-cubes-demo"
+version = "0.0.1"
+authors = ["Dan Spencer <dan@atomicpotato.net>"]
+
+[dependencies.game]
+path = "src/game"
+
+[dependencies.opengl_util]
+path = "src/opengl_util"
+
+[dependencies.util]
+path = "src/util"
+
+[dependencies.sdl2]
+git = "https://github.com/AngryLawyer/rust-sdl2"
+
+[dependencies.gl]
+git = "https://github.com/bjz/gl-rs"
+
+[dependencies.cgmath]
+git = "https://github.com/bjz/cgmath-rs"

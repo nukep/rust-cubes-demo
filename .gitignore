@@ -1,0 +1,5 @@
+/target
+
+# .dll, .a files for linking on Windows
+*.dll
+*.a
