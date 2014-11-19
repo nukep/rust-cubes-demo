@@ -78,10 +78,10 @@ impl Drop for Program {
     }
 }
 impl Program {
-    /// Links a new program by using the provided vertex and fragment shaders.
+    /// Links a new program with the provided shaders.
     ///
     /// Uses `glAttachShader()` and `glLinkProgram()`
-    pub fn new(name: String, vertex: Shader, fragment: Shader) -> Program {
+    pub fn link(name: String, shaders: &[&Shader]) -> Result<Program, String> {
         let program = Program {
             name: name,
             id: unsafe { gl::CreateProgram() }
@@ -90,8 +90,9 @@ impl Program {
         let successful: bool;
 
         unsafe {
-            gl::AttachShader(program.id, vertex.id);
-            gl::AttachShader(program.id, fragment.id);
+            for shader in shaders.iter() {
+                gl::AttachShader(program.id, shader.id);
+            }
             gl::LinkProgram(program.id);
 
             successful = {
@@ -102,9 +103,9 @@ impl Program {
         }
 
         if successful {
-            program
+            Ok(program)
         } else {
-            panic!("Shader link error: {}", program.get_link_log());
+            Err(program.get_link_log())
         }
     }
 
