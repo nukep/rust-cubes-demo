@@ -28,7 +28,7 @@ struct SDLInput {
     mouse_in_focus: bool
 }
 impl SDLInput {
-    fn new() -> SDLInput {
+    pub fn new() -> SDLInput {
         SDLInput {
             keyboard: HashSet::new(),
             mouse: None,
@@ -36,22 +36,32 @@ impl SDLInput {
             mouse_in_focus: false
         }
     }
-    fn is_mouse_button_down(&self, button: sdl2::mouse::MouseState) -> bool {
+
+    pub fn is_mouse_button_down(&self, button: sdl2::mouse::MouseState) -> bool {
         match self.mouse {
             Some((state, _, _)) => state.intersects(button),
             None => false
         }
     }
-    fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
+
+    pub fn is_mouse_button_newly_down(&self, old: &SDLInput, button: sdl2::mouse::MouseState) -> bool {
+        !old.is_mouse_button_down(button) && self.is_mouse_button_down(button)
+    }
+
+    pub fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
         let scancode_int = scancode.to_uint().unwrap();
         self.keyboard.contains(&scancode_int)
     }
+
+    pub fn is_scancode_newly_down(&self, old: &SDLInput, scancode: sdl2::scancode::ScanCode) -> bool {
+        !old.is_scancode_down(scancode) && self.is_scancode_down(scancode)
+    }
 }
 
-fn solve_input(_old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInput {
-    let explode = new.is_scancode_down(sdl2::scancode::SpaceScanCode);
+fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInput {
+    let explode = new.is_scancode_newly_down(old, sdl2::scancode::SpaceScanCode);
     let explode_subcube = new.is_mouse_button_down(sdl2::mouse::LEFTMOUSESTATE);
-    let reset = new.is_mouse_button_down(sdl2::mouse::RIGHTMOUSESTATE);
+    let reset = new.is_mouse_button_newly_down(old, sdl2::mouse::RIGHTMOUSESTATE);
     let screen_pointer = match new.mouse_in_focus {
         true => match new.mouse {
             Some((_, x, y)) => Some((x as i32, y as i32)),
