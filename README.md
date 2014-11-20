@@ -1,6 +1,21 @@
 This is a simple tech demo I wrote so I could learn Rust.
 It utilizes OpenGL 3 and SDL2.
 
+## Controls
+
+Use your mouse to hover over and explode subcubes.
+
+* Left click: Explode (subdivide) hovered subcube
+* Right click: Rearrange all subcubes into their original positions
+* Space: Hurl all subcubes outward
+* "O" key: Toggle outlines
+* "R" key: Reset to a single subcube
+
+## Screenshots
+
+![Screenshot 1](screenshots/screenshot1.png)
+![Screenshot 2](screenshots/screenshot2.png)
+
 ## Build instructions
 You need the SDL2 binaries on your system, as this is a non-Rust dependency.
 
