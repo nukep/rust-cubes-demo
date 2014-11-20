@@ -24,7 +24,6 @@ struct SDLInput {
     /// sdl2::scancode::ScanCode doesn't implement Clone, so we need to store an integer representation
     keyboard: HashSet<uint>,
     mouse: Option<(sdl2::mouse::MouseState, int, int)>,
-    mouse_drag_from: Option<(sdl2::mouse::MouseState, int, int)>,
     mouse_in_focus: bool
 }
 impl SDLInput {
@@ -32,7 +31,6 @@ impl SDLInput {
         SDLInput {
             keyboard: HashSet::new(),
             mouse: None,
-            mouse_drag_from: None,
             mouse_in_focus: false
         }
     }
@@ -48,6 +46,23 @@ impl SDLInput {
         !old.is_mouse_button_down(button) && self.is_mouse_button_down(button)
     }
 
+    pub fn get_mouse_delta(&self, old: &SDLInput, button: sdl2::mouse::MouseState) -> Option<(int, int)> {
+        match (self.mouse, old.mouse) {
+            (Some((n_state, n_x, n_y)), Some((o_state, o_x, o_y))) => {
+                if n_state.intersects(button) && o_state.intersects(button) {
+                    match (n_x - o_x, n_y - o_y) {
+                        // A delta of (0, 0) means there was no change
+                        (0, 0) => None,
+                        delta => Some(delta)
+                    }
+                } else {
+                    None
+                }
+            },
+            _ => None
+        }
+    }
+
     pub fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
         let scancode_int = scancode.to_uint().unwrap();
         self.keyboard.contains(&scancode_int)
@@ -61,6 +76,20 @@ impl SDLInput {
 fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInput {
     use sdl2::scancode::ScanCode;
 
+    /// Screen coordinates (pixels) to normalized device coordinates (0..1)
+    fn screen_to_ndc(viewport: (i32, i32), screen: (int, int)) -> (f32, f32) {
+        let (width, height) = viewport;
+        let (x, y) = screen;
+        ((x as f32 / width as f32 - 0.5)*2.0, -(y as f32 / height as f32 - 0.5)*2.0)
+    }
+
+    fn screen_delta_to_y_ratio(viewport: (i32, i32), screen_delta: (int, int)) -> (f32, f32) {
+        let (width, height) = viewport;
+        let (x, y) = screen_delta;
+        let x_aspect = (width as f32) / (height as f32);
+        ((x as f32 / width as f32)*x_aspect, -(y as f32 / height as f32))
+    }
+
     let hurl_all = new.is_scancode_newly_down(old, ScanCode::Space);
     let explode_subcube = new.is_mouse_button_down(sdl2::mouse::LEFTMOUSESTATE);
     let rearrange = new.is_mouse_button_newly_down(old, sdl2::mouse::RIGHTMOUSESTATE);
@@ -68,19 +97,20 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
     let toggle_show_outlines = new.is_scancode_newly_down(old, ScanCode::O);
     let screen_pointer = match new.mouse_in_focus {
         true => match new.mouse {
-            Some((_, x, y)) => Some((x as i32, y as i32)),
+            Some((_, x, y)) => Some((x, y)),
             None => None
         },
         false => None
     };
 
-    let pointer = match viewport {
-        (width, height) => {
-            match screen_pointer {
-                Some((x, y)) => Some(((x as f32 / width as f32 - 0.5)*2.0, -(y as f32 / height as f32 - 0.5)*2.0)),
-                None => None
-            }
-        }
+    let pointer = match screen_pointer {
+        Some(screen) => Some(screen_to_ndc(viewport, screen)),
+        None => None
+    };
+
+    let rotate_view = match new.get_mouse_delta(old, sdl2::mouse::MIDDLEMOUSESTATE) {
+        Some(d) => screen_delta_to_y_ratio(viewport, d),
+        None => (0.0, 0.0)
     };
 
     GameInput {
@@ -90,7 +120,7 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
         reset: reset,
         toggle_show_outlines: toggle_show_outlines,
         pointer: pointer,
-        rotate_view: (0.0, 0.0)
+        rotate_view: rotate_view
     }
 }
 
@@ -176,8 +206,7 @@ impl Game {
         SDLEventLoopResult::HasInput(SDLInput {
             keyboard: keyboard,
             mouse: Some(mouse),
-            mouse_in_focus: mouse_in_focus,
-            mouse_drag_from: None
+            mouse_in_focus: mouse_in_focus
         })
     }
 
