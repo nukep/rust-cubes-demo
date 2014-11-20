@@ -21,6 +21,7 @@ You need the SDL2 binaries on your system, as this is a non-Rust dependency.
 
 * Windows: Download SDL2.dll [here](https://www.libsdl.org/download-2.0.php) and place it on the project's root.
 * Ubuntu/Debian: `sudo apt-get install libsdl2-dev`
+* Mac OS X: `brew install sdl2` (make sure you have [Homebrew](http://brew.sh/) installed)
 
 Then run cargo on the project's root:
 
