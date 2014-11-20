@@ -27,6 +27,7 @@ pub struct GameInput {
     pub hurl_all: bool,
     pub explode_subcube: bool,
     pub rearrange: bool,
+    pub reset: bool,
     pub toggle_show_outlines: bool,
     /// The pointer coordinates range from -1.0 to +1.0.
     /// e.g. (0.0, 0.0) is the center, (1.0, 1.0) is the top-right.
@@ -54,6 +55,8 @@ impl GameState {
             self.cube.try_hurl_all(4.0);
         } else if input.rearrange {
             self.cube.try_rearrange();
+        } else if input.reset {
+            self.cube.try_reset();
         }
 
         let projection_view = self.solve_projection_view(viewport);

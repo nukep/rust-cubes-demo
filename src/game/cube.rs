@@ -10,6 +10,7 @@ struct CubeStateRearranging {
 
 enum CubeState {
     Simulating,
+    Resetting,
     Rearranging(CubeStateRearranging)
 }
 
@@ -40,36 +41,50 @@ impl Cube {
         }
     }
 
-    pub fn try_hurl_all(&mut self, force: f32) {
+    /// Run the provided callback if the Simulating state is active.
+    ///
+    /// Note: A reference to self is passed to the callback to get around
+    /// Rust's borrowing rules.
+    fn try_on_simulating<R>(&mut self, cb: |&mut Cube| -> R) -> Option<R> {
         match self.state {
             CubeState::Simulating => {
-                let origin = Vector3::from_value(0.0);
-                for subcube in self.subcubes.iter_mut() {
-                    subcube.hurl(force, &origin, &mut self.rng);
-                }
+                Some(cb(self))
             },
-            _ => ()
+            _ => None
         }
     }
 
-    pub fn try_rearrange(&mut self) {
-        let next_state = match self.state {
-            CubeState::Simulating => {
-                for subcube in self.subcubes.iter_mut() {
-                    subcube.cancel_momentum();
-                }
-                Some(CubeState::Rearranging(CubeStateRearranging{
-                    p: 0.0,
-                    next_state: box CubeState::Simulating
-                }))
-            },
-            _ => None
-        };
+    pub fn try_hurl_all(&mut self, force: f32) {
+        self.try_on_simulating(|_self| {
+            let origin = Vector3::from_value(0.0);
+            for subcube in _self.subcubes.iter_mut() {
+                subcube.hurl(force, &origin, &mut _self.rng);
+            }
+        });
+    }
 
-        match next_state {
-            Some(s) => self.state = s,
-            None => ()
-        };
+    pub fn try_rearrange(&mut self) {
+        self.try_on_simulating(|_self| {
+            for subcube in _self.subcubes.iter_mut() {
+                subcube.cancel_momentum();
+            }
+            _self.state = CubeState::Rearranging(CubeStateRearranging{
+                p: 0.0,
+                next_state: box CubeState::Simulating
+            })
+        });
+    }
+
+    pub fn try_reset(&mut self) {
+        self.try_on_simulating(|_self| {
+            for subcube in _self.subcubes.iter_mut() {
+                subcube.cancel_momentum();
+            }
+            _self.state = CubeState::Rearranging(CubeStateRearranging{
+                p: 0.0,
+                next_state: box CubeState::Resetting
+            })
+        });
     }
 
     fn subdivide_subcube(&mut self, index: uint, subdivide_count: uint) -> Vec<uint> {
@@ -134,6 +149,11 @@ impl Cube {
                     subcube.step(frac);
                 }
                 None
+            },
+            CubeState::Resetting => {
+                self.subcubes = vec![Subcube::from_segment(Vector3::zero(), 1.0)];
+
+                Some(CubeState::Simulating)
             },
             CubeState::Rearranging(ref mut s) => {
                 for subcube in self.subcubes.iter_mut() {

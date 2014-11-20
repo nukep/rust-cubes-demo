@@ -64,6 +64,7 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
     let hurl_all = new.is_scancode_newly_down(old, ScanCode::Space);
     let explode_subcube = new.is_mouse_button_down(sdl2::mouse::LEFTMOUSESTATE);
     let rearrange = new.is_mouse_button_newly_down(old, sdl2::mouse::RIGHTMOUSESTATE);
+    let reset = new.is_scancode_newly_down(old, ScanCode::R);
     let toggle_show_outlines = new.is_scancode_newly_down(old, ScanCode::O);
     let screen_pointer = match new.mouse_in_focus {
         true => match new.mouse {
@@ -86,6 +87,7 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
         hurl_all: hurl_all,
         explode_subcube: explode_subcube,
         rearrange: rearrange,
+        reset: reset,
         toggle_show_outlines: toggle_show_outlines,
         pointer: pointer,
         rotate_view: (0.0, 0.0)
