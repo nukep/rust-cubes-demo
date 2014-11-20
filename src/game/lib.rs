@@ -113,6 +113,7 @@ impl GameState {
 
     fn solve_projection_view(&self, viewport: (i32,i32)) -> cgmath::Matrix4<f32> {
         use util::matrix::MatrixBuilder;
+        use std::num::Float;
 
         let viewport_aspect = match viewport {
             (width, height) => width as f32 / height as f32

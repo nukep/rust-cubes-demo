@@ -13,7 +13,7 @@ dependencies = [
 [[package]]
 name = "cgmath"
 version = "0.0.1"
-source = "git+https://github.com/bjz/cgmath-rs#66114567919a2304d9d977c542198bec6d4f2e39"
+source = "git+https://github.com/bjz/cgmath-rs#ce4ec6279860e1e5bfacf972391188c1c8fa380d"
 
 [[package]]
 name = "game"
@@ -26,7 +26,7 @@ dependencies = [
 [[package]]
 name = "gl"
 version = "0.0.1"
-source = "git+https://github.com/bjz/gl-rs#678346eb5f8ba95f50a8d0f7ff9d87a7338953dc"
+source = "git+https://github.com/bjz/gl-rs#d9e63fcb0cb0a2fd97a815bee612a96b394afbb0"
 dependencies = [
  "gl_generator 0.0.1 (git+https://github.com/bjz/gl-rs)",
 ]
@@ -34,45 +34,39 @@ dependencies = [
 [[package]]
 name = "gl_common"
 version = "0.0.1"
-source = "git+https://github.com/bjz/gl-rs#678346eb5f8ba95f50a8d0f7ff9d87a7338953dc"
+source = "git+https://github.com/bjz/gl-rs#d9e63fcb0cb0a2fd97a815bee612a96b394afbb0"
 
 [[package]]
 name = "gl_generator"
 version = "0.0.1"
-source = "git+https://github.com/bjz/gl-rs#678346eb5f8ba95f50a8d0f7ff9d87a7338953dc"
+source = "git+https://github.com/bjz/gl-rs#d9e63fcb0cb0a2fd97a815bee612a96b394afbb0"
 dependencies = [
  "gl_common 0.0.1 (git+https://github.com/bjz/gl-rs)",
- "khronos_api 0.0.1 (git+https://github.com/bjz/gl-rs)",
+ "khronos_api 0.0.2 (git+https://github.com/bjz/gl-rs)",
  "rust-xml 0.1.0 (git+https://github.com/netvl/rust-xml)",
 ]
 
 [[package]]
 name = "khronos_api"
-version = "0.0.1"
-source = "git+https://github.com/bjz/gl-rs#678346eb5f8ba95f50a8d0f7ff9d87a7338953dc"
-
-[[package]]
-name = "lodepng"
-version = "0.1.0"
-source = "git+https://github.com/pornel/lodepng-rust#4d54d22a2396d46e5912c12da4b403ba748aae75"
+version = "0.0.2"
+source = "git+https://github.com/bjz/gl-rs#d9e63fcb0cb0a2fd97a815bee612a96b394afbb0"
 
 [[package]]
 name = "opengl_util"
 version = "0.0.1"
 dependencies = [
  "gl 0.0.1 (git+https://github.com/bjz/gl-rs)",
- "lodepng 0.1.0 (git+https://github.com/pornel/lodepng-rust)",
 ]
 
 [[package]]
 name = "rust-xml"
 version = "0.1.0"
-source = "git+https://github.com/netvl/rust-xml#d6c57380a300b94f7e7881979dbe5459dbe4ca06"
+source = "git+https://github.com/netvl/rust-xml#8feef8eab34cc1a9431870be3b2eccf0343dae19"
 
 [[package]]
 name = "sdl2"
 version = "0.0.1-alpha.1"
-source = "git+https://github.com/AngryLawyer/rust-sdl2#93cc0d4184b3f66dbced0e46798dc3800717cb3b"
+source = "git+https://github.com/AngryLawyer/rust-sdl2#1553901acb9593badde4b7446afc6df1c5696404"
 
 [[package]]
 name = "util"

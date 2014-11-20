@@ -8,7 +8,7 @@ struct CubeStateResetting {
     p: f32
 }
 
-enum CubeStateE {
+enum CubeState {
     Simulating(CubeStateSimulating),
     Resetting(CubeStateResetting)
 }
@@ -16,7 +16,7 @@ enum CubeStateE {
 pub struct Cube {
     pub subcubes: Vec<Subcube>,
     pub rng: StdRng,
-    state: CubeStateE
+    state: CubeState
 }
 
 pub struct Subcube {
@@ -36,13 +36,13 @@ impl Cube {
         Cube {
             subcubes: subcubes,
             rng: StdRng::new().unwrap(),
-            state: Simulating(CubeStateSimulating)
+            state: CubeState::Simulating(CubeStateSimulating)
         }
     }
 
     pub fn try_explode(&mut self, force: f32) {
         match self.state {
-            Simulating(_) => {
+            CubeState::Simulating(_) => {
                 let origin = Vector3::from_value(0.0);
                 for subcube in self.subcubes.iter_mut() {
                     subcube.hurl(force, &origin, &mut self.rng);
@@ -54,11 +54,11 @@ impl Cube {
 
     pub fn try_reset(&mut self) {
         let next_state = match self.state {
-            Simulating(_) => {
+            CubeState::Simulating(_) => {
                 for subcube in self.subcubes.iter_mut() {
                     subcube.cancel_momentum();
                 }
-                Some(Resetting(CubeStateResetting{ p: 0.0 }))
+                Some(CubeState::Resetting(CubeStateResetting{ p: 0.0 }))
             },
             _ => None
         };
@@ -124,13 +124,13 @@ impl Cube {
     /// Integrate the cube simulation by stepping all subcubes
     pub fn step(&mut self, frac: f32) {
         let next_state = match self.state {
-            Simulating(_) => {
+            CubeState::Simulating(_) => {
                 for subcube in self.subcubes.iter_mut() {
                     subcube.step(frac);
                 }
                 None
             },
-            Resetting(ref mut s) => {
+            CubeState::Resetting(ref mut s) => {
                 for subcube in self.subcubes.iter_mut() {
                     subcube.approach_original_arrangement(frac);
                 }
@@ -143,7 +143,7 @@ impl Cube {
                         for subcube in self.subcubes.iter_mut() {
                             subcube.reset();
                         }
-                        Some(Simulating(CubeStateSimulating))
+                        Some(CubeState::Simulating(CubeStateSimulating))
                     }
                 }
             }
@@ -354,7 +354,7 @@ impl Subcube {
         // Slow down 30% per second
         // x^(1/frac) = 0.7
         // x = 0.7 ^ frac
-        let m = Float::powf(0.7, frac);
+        let m = std::num::Float::powf(0.7, frac);
         self.vel.mul_self_s(m);
         self.angular_momentum.mul_self_s(m);
     }

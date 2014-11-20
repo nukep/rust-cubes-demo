@@ -59,10 +59,12 @@ impl SDLInput {
 }
 
 fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInput {
-    let explode = new.is_scancode_newly_down(old, sdl2::scancode::SpaceScanCode);
+    use sdl2::scancode::ScanCode;
+
+    let explode = new.is_scancode_newly_down(old, ScanCode::Space);
     let explode_subcube = new.is_mouse_button_down(sdl2::mouse::LEFTMOUSESTATE);
     let reset = new.is_mouse_button_newly_down(old, sdl2::mouse::RIGHTMOUSESTATE);
-    let toggle_show_outlines = new.is_scancode_newly_down(old, sdl2::scancode::OScanCode);
+    let toggle_show_outlines = new.is_scancode_newly_down(old, ScanCode::O);
     let screen_pointer = match new.mouse_in_focus {
         true => match new.mouse {
             Some((_, x, y)) => Some((x as i32, y as i32)),
@@ -139,15 +141,17 @@ impl Game {
     }
 
     fn event_loop(&self) -> SDLEventLoopResult {
+        use sdl2::event::Event;
+        use sdl2::keycode::KeyCode;
         'event: loop {
             match sdl2::event::poll_event() {
-                sdl2::event::QuitEvent(_) => { return Exit; },
-                sdl2::event::KeyDownEvent(_, _, key, _, _) => {
-                    if key == sdl2::keycode::EscapeKey {
-                        return Exit;
+                Event::Quit(_) => { return SDLEventLoopResult::Exit; },
+                Event::KeyDown(_, _, key, _, _) => {
+                    if key == KeyCode::Escape {
+                        return SDLEventLoopResult::Exit;
                     }
                 },
-                sdl2::event::NoEvent => { break 'event; },
+                Event::None => { break 'event; },
                 _ => ()
             }
         }
@@ -167,7 +171,7 @@ impl Game {
             }
         }
 
-        HasInput(SDLInput {
+        SDLEventLoopResult::HasInput(SDLInput {
             keyboard: keyboard,
             mouse: Some(mouse),
             mouse_in_focus: mouse_in_focus,
@@ -208,8 +212,8 @@ impl Game {
         // The loop always has a "last frame" to refer to
         'main: loop {
             let input = match self.event_loop() {
-                HasInput(input) => input,
-                Exit => break 'main
+                SDLEventLoopResult::HasInput(input) => input,
+                SDLEventLoopResult::Exit => break 'main
             };
 
             let current_frame = Frame {

@@ -24,7 +24,7 @@ fn load_default_program() -> opengl_util::shader::Program {
         Err(s) => panic!("Fragment shader compilation error: {}", s)
     };
 
-    match Program::link("default".to_string(), [&vertex, &fragment]) {
+    match Program::link("default".to_string(), &[&vertex, &fragment]) {
         Ok(program) => program,
         Err(s) => panic!("Shader link error: {}", s)
     }

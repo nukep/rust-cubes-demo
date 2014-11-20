@@ -44,7 +44,7 @@ pub fn gen_cube(length: f32, offset: f32, a_position: Attrib) -> VertexArray {
     let mut buffer: Vec<f32> = Vec::new();
     for i in VERT_IDX.iter() {
         let (x,y,z) = corner[*i];
-        buffer.push_all([x,y,z]);
+        buffer.push_all(&[x,y,z]);
     }
 
     VertexArray::new(|vao_ctx| {
