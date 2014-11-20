@@ -65,7 +65,7 @@ impl Renderer {
 
         self.program.use_program(|uniform| {
             uniform.set_mat4(self.program.get_uniform("projection_view"), step_result.projection_view.as_fixed());
-            uniform.set_bool(u_show_outlines, false);
+            uniform.set_bool(u_show_outlines, state.show_outlines);
 
             self.vao.bind_vao(|vao_ctx| {
                 let mut idx = 0;

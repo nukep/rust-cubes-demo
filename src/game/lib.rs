@@ -10,7 +10,8 @@ pub mod cube;
 /// It is perpetually updated and controlled by the game loop.
 pub struct GameState {
     pub rot: f32,
-    pub cube: cube::Cube
+    pub cube: cube::Cube,
+    pub show_outlines: bool
 }
 
 /// One-off data derived from GameState and used by the renderer.
@@ -26,6 +27,7 @@ pub struct GameInput {
     pub explode: bool,
     pub explode_subcube: bool,
     pub reset: bool,
+    pub toggle_show_outlines: bool,
     /// The pointer coordinates range from -1.0 to +1.0.
     /// e.g. (0.0, 0.0) is the center, (1.0, 1.0) is the top-right.
     pub pointer: Option<(f32, f32)>,
@@ -40,7 +42,8 @@ impl GameState {
     pub fn new() -> GameState {
         GameState {
             rot: 0.0,
-            cube: Cube::new()
+            cube: Cube::new(),
+            show_outlines: false
         }
     }
 
@@ -62,6 +65,10 @@ impl GameState {
                 Some(s) => self.cube.explode_subcube_if_at_least(s, 4.0, 2, 1.0/16.0),
                 None => ()
             }
+        }
+
+        if input.toggle_show_outlines {
+            self.show_outlines = !self.show_outlines;
         }
 
         self.rot += 1.0;
