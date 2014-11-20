@@ -3,14 +3,14 @@ use std::rand::StdRng;
 use cgmath;
 use cgmath::{Vector, Vector3, Quaternion, Rotation, Ray3};
 
-struct CubeStateSimulating;
-struct CubeStateResetting {
-    p: f32
+struct CubeStateRearranging {
+    p: f32,
+    next_state: Box<CubeState>
 }
 
 enum CubeState {
-    Simulating(CubeStateSimulating),
-    Resetting(CubeStateResetting)
+    Simulating,
+    Rearranging(CubeStateRearranging)
 }
 
 pub struct Cube {
@@ -36,13 +36,13 @@ impl Cube {
         Cube {
             subcubes: subcubes,
             rng: StdRng::new().unwrap(),
-            state: CubeState::Simulating(CubeStateSimulating)
+            state: CubeState::Simulating
         }
     }
 
-    pub fn try_explode(&mut self, force: f32) {
+    pub fn try_hurl_all(&mut self, force: f32) {
         match self.state {
-            CubeState::Simulating(_) => {
+            CubeState::Simulating => {
                 let origin = Vector3::from_value(0.0);
                 for subcube in self.subcubes.iter_mut() {
                     subcube.hurl(force, &origin, &mut self.rng);
@@ -52,13 +52,16 @@ impl Cube {
         }
     }
 
-    pub fn try_reset(&mut self) {
+    pub fn try_rearrange(&mut self) {
         let next_state = match self.state {
-            CubeState::Simulating(_) => {
+            CubeState::Simulating => {
                 for subcube in self.subcubes.iter_mut() {
                     subcube.cancel_momentum();
                 }
-                Some(CubeState::Resetting(CubeStateResetting{ p: 0.0 }))
+                Some(CubeState::Rearranging(CubeStateRearranging{
+                    p: 0.0,
+                    next_state: box CubeState::Simulating
+                }))
             },
             _ => None
         };
@@ -71,7 +74,7 @@ impl Cube {
 
     fn subdivide_subcube(&mut self, index: uint, subdivide_count: uint) -> Vec<uint> {
         use std::num::Int;
-        
+
         assert!(subdivide_count > 0);
         let original = *self.subcubes.index(&index);
 
@@ -126,18 +129,18 @@ impl Cube {
     /// Integrate the cube simulation by stepping all subcubes
     pub fn step(&mut self, frac: f32) {
         let next_state = match self.state {
-            CubeState::Simulating(_) => {
+            CubeState::Simulating => {
                 for subcube in self.subcubes.iter_mut() {
                     subcube.step(frac);
                 }
                 None
             },
-            CubeState::Resetting(ref mut s) => {
+            CubeState::Rearranging(ref mut s) => {
                 for subcube in self.subcubes.iter_mut() {
                     subcube.approach_original_arrangement(frac);
                 }
 
-                // Resume to Simulating state after 1.5 seconds
+                // Go to the next state after 1.5 seconds
                 s.p += frac;
                 match s.p {
                     0.0...1.5 => None,
@@ -145,7 +148,14 @@ impl Cube {
                         for subcube in self.subcubes.iter_mut() {
                             subcube.reset();
                         }
-                        Some(CubeState::Simulating(CubeStateSimulating))
+
+                        // Use a dummy value to swap in the next state
+                        let mut next_state = CubeState::Simulating;
+                        // Moving would violate lifetime rules, so a swap is
+                        // used instead.
+                        std::mem::swap(&mut next_state, &mut *s.next_state);
+
+                        Some(next_state)
                     }
                 }
             }

@@ -24,9 +24,9 @@ pub struct GameStepResult {
 
 #[deriving(Default)]
 pub struct GameInput {
-    pub explode: bool,
+    pub hurl_all: bool,
     pub explode_subcube: bool,
-    pub reset: bool,
+    pub rearrange: bool,
     pub toggle_show_outlines: bool,
     /// The pointer coordinates range from -1.0 to +1.0.
     /// e.g. (0.0, 0.0) is the center, (1.0, 1.0) is the top-right.
@@ -50,10 +50,10 @@ impl GameState {
     pub fn steps_per_second() -> int { 60 }
 
     pub fn step(&mut self, viewport: (i32,i32), input: &GameInput) -> GameStepResult {
-        if input.explode {
-            self.cube.try_explode(4.0);
-        } else if input.reset {
-            self.cube.try_reset();
+        if input.hurl_all {
+            self.cube.try_hurl_all(4.0);
+        } else if input.rearrange {
+            self.cube.try_rearrange();
         }
 
         let projection_view = self.solve_projection_view(viewport);
