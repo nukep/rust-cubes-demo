@@ -11,7 +11,9 @@ pub struct Game {
     window: sdl2::video::Window,
     _context: sdl2::video::GLContext,
     renderer: Renderer,
-    state: GameState
+    state: GameState,
+
+    mouse_wheel_absolute: (int, int)
 }
 
 enum SDLEventLoopResult {
@@ -24,14 +26,16 @@ struct SDLInput {
     /// sdl2::scancode::ScanCode doesn't implement Clone, so we need to store an integer representation
     keyboard: HashSet<uint>,
     mouse: Option<(sdl2::mouse::MouseState, int, int)>,
-    mouse_in_focus: bool
+    mouse_in_focus: bool,
+    mouse_wheel_absolute: (int, int)
 }
 impl SDLInput {
     pub fn new() -> SDLInput {
         SDLInput {
             keyboard: HashSet::new(),
             mouse: None,
-            mouse_in_focus: false
+            mouse_in_focus: false,
+            mouse_wheel_absolute: (0, 0)
         }
     }
 
@@ -113,6 +117,10 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
         None => (0.0, 0.0)
     };
 
+    let zoom_view_change = match (old.mouse_wheel_absolute, new.mouse_wheel_absolute) {
+        ((_, old_y), (_, new_y)) => (new_y - old_y) as f32 / 3.0
+    };
+
     GameInput {
         hurl_all: hurl_all,
         explode_subcube: explode_subcube,
@@ -120,7 +128,8 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
         reset: reset,
         toggle_show_outlines: toggle_show_outlines,
         pointer: pointer,
-        rotate_view: rotate_view
+        rotate_view: rotate_view,
+        zoom_view_change: zoom_view_change
     }
 }
 
@@ -162,7 +171,8 @@ impl Game {
             window: window,
             _context: context,
             renderer: renderer,
-            state: state
+            state: state,
+            mouse_wheel_absolute: (0, 0)
         })
     }
 
@@ -172,9 +182,10 @@ impl Game {
         None
     }
 
-    fn event_loop(&self) -> SDLEventLoopResult {
+    fn event_loop(&mut self) -> SDLEventLoopResult {
         use sdl2::event::Event;
         use sdl2::keycode::KeyCode;
+
         'event: loop {
             match sdl2::event::poll_event() {
                 Event::Quit(_) => { return SDLEventLoopResult::Exit; },
@@ -182,6 +193,10 @@ impl Game {
                     if key == KeyCode::Escape {
                         return SDLEventLoopResult::Exit;
                     }
+                },
+                Event::MouseWheel(_, _, _, x, y) => {
+                    let (abs_x, abs_y) = self.mouse_wheel_absolute;
+                    self.mouse_wheel_absolute = (abs_x + x, abs_y + y);
                 },
                 Event::None => { break 'event; },
                 _ => ()
@@ -206,7 +221,8 @@ impl Game {
         SDLEventLoopResult::HasInput(SDLInput {
             keyboard: keyboard,
             mouse: Some(mouse),
-            mouse_in_focus: mouse_in_focus
+            mouse_in_focus: mouse_in_focus,
+            mouse_wheel_absolute: self.mouse_wheel_absolute
         })
     }
 

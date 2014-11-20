@@ -9,9 +9,10 @@ pub mod cube;
 /// GameState describes all non-derivable data required to present a frame.
 /// It is perpetually updated and controlled by the game loop.
 pub struct GameState {
-    pub rot: f32,
     pub cube: cube::Cube,
-    pub show_outlines: bool
+    pub show_outlines: bool,
+    orientation: cgmath::Quaternion<f32>,
+    zoom: f32
 }
 
 /// One-off data derived from GameState and used by the renderer.
@@ -32,7 +33,8 @@ pub struct GameInput {
     /// The pointer coordinates range from -1.0 to +1.0.
     /// e.g. (0.0, 0.0) is the center, (1.0, 1.0) is the top-right.
     pub pointer: Option<(f32, f32)>,
-    pub rotate_view: (f32, f32)
+    pub rotate_view: (f32, f32),
+    pub zoom_view_change: f32
 }
 
 impl GameInput {
@@ -41,10 +43,13 @@ impl GameInput {
 
 impl GameState {
     pub fn new() -> GameState {
+        use cgmath::{Vector3, Rotation};
+
         GameState {
-            rot: 0.0,
             cube: Cube::new(),
-            show_outlines: false
+            show_outlines: false,
+            orientation: Rotation::look_at(&Vector3::new(0.5, 0.25, 0.5), &Vector3::new(0.0, 1.0, 0.0)),
+            zoom: 1.0
         }
     }
 
@@ -74,7 +79,17 @@ impl GameState {
             self.show_outlines = !self.show_outlines;
         }
 
-        self.rot += 1.0;
+        {
+            use cgmath::{Quaternion, Vector, Vector3, EuclideanVector};
+            let q_rotate_view = {
+                let (x,y) = input.rotate_view;
+                Quaternion::from_sv(0.0, Vector3::new(-y, x, 0.0).mul_s(2.0))
+            };
+            let d_orientation = q_rotate_view.mul_q(&self.orientation);
+            self.orientation = self.orientation.add_q(&d_orientation).normalize();
+        }
+        self.zoom -= input.zoom_view_change * 1.0/4.0;
+
         self.cube.step(1.0 / GameState::steps_per_second() as f32);
 
         GameStepResult {
@@ -124,15 +139,13 @@ impl GameState {
         let projection = cgmath::ToMatrix4::to_matrix4(&cgmath::PerspectiveFov {
             fovy: cgmath::Deg { s: 45.0 },
             aspect: viewport_aspect,
-            near: 1.0,
+            near: 0.1,
             far: 100.0
         });
 
-        let rad = 20.0 * Float::pi()/180.0;
         let view = cgmath::Matrix4::identity()
-            .translate(0.0, 0.0, -5.0)
-            .rotate_y(self.rot * Float::pi()/180.0)
-            .rotate_x(rad);
+            .translate(0.0, 0.0, -1.0 + -(5.0f32.powf(self.zoom)))
+            .quaternion(&self.orientation);
 
         projection * view
     }
