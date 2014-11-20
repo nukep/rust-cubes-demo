@@ -7,6 +7,7 @@ dependencies = [
  "gl 0.0.1 (git+https://github.com/bjz/gl-rs)",
  "opengl_util 0.0.1",
  "sdl2 0.0.1-alpha.1 (git+https://github.com/AngryLawyer/rust-sdl2)",
+ "time 0.0.2 (git+https://github.com/rust-lang/time)",
  "util 0.0.1",
 ]
 
@@ -22,6 +23,11 @@ dependencies = [
  "cgmath 0.0.1 (git+https://github.com/bjz/cgmath-rs)",
  "util 0.0.1",
 ]
+
+[[package]]
+name = "gcc"
+version = "0.0.1"
+source = "git+https://github.com/alexcrichton/gcc-rs#f25b3ba9c40303781189cc137fb98fffe5b56de7"
 
 [[package]]
 name = "gl"
@@ -67,6 +73,14 @@ source = "git+https://github.com/netvl/rust-xml#8feef8eab34cc1a9431870be3b2eccf0
 name = "sdl2"
 version = "0.0.1-alpha.1"
 source = "git+https://github.com/AngryLawyer/rust-sdl2#1553901acb9593badde4b7446afc6df1c5696404"
+
+[[package]]
+name = "time"
+version = "0.0.2"
+source = "git+https://github.com/rust-lang/time#b58210c93a44d7b83a1a9b68b462f5a7fa1942f3"
+dependencies = [
+ "gcc 0.0.1 (git+https://github.com/alexcrichton/gcc-rs)",
+]
 
 [[package]]
 name = "util"

@@ -70,6 +70,8 @@ impl Cube {
     }
 
     fn subdivide_subcube(&mut self, index: uint, subdivide_count: uint) -> Vec<uint> {
+        use std::num::Int;
+        
         assert!(subdivide_count > 0);
         let original = *self.subcubes.index(&index);
 
@@ -77,7 +79,7 @@ impl Cube {
         *(self.subcubes.index_mut(&index)) = original.get_subdivided_subcube(subdivide_count, (0,0,0));
 
         // Push `subdivide_count**3 - 1` new subcubes at the end of the `subcubes` vector
-        let subdivide_count_cubed = std::num::pow(subdivide_count, 3);
+        let subdivide_count_cubed = subdivide_count.pow(3);
         self.subcubes.reserve(subdivide_count_cubed-1);
 
         let new_subcubes_idx = self.subcubes.len();

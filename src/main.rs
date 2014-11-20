@@ -13,7 +13,7 @@ mod sdl_opengl;
 // Statically link SDL2 (libSDL2.a)
 // Link the required Windows dependencies
 #[cfg(target_os="windows")]
-#[link_args = "-lwinmm -lole32 -lgdi32 -limm32 -lversion -loleaut32"]
+#[link_args = "-lwinmm -lole32 -lgdi32 -limm32 -lversion -loleaut32 -luuid"]
 extern {}
 
 pub fn main() {
