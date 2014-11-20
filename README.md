@@ -17,6 +17,14 @@ Use your mouse to hover over and explode subcubes.
 ![Screenshot 2](screenshots/screenshot2.png)
 
 ## Build instructions
+It is recommended you [install Rust nightly](http://www.rust-lang.org/install.html)
+and Cargo on your machine.
+An easy way to do this on Linux and OS X is by entering the following:
+
+```bash
+    curl -s https://static.rust-lang.org/rustup.sh | sudo sh
+```
+
 You need the SDL2 binaries on your system, as this is a non-Rust dependency.
 
 * Windows: Download SDL2.dll [here](https://www.libsdl.org/download-2.0.php) and place it on the project's root.
