@@ -7,6 +7,8 @@ Use your mouse to hover over and explode subcubes.
 
 * Left click: Explode (subdivide) hovered subcube
 * Right click: Rearrange all subcubes into their original positions
+* Middle drag: Rotate view
+* Mouse wheel: Zoom in/out
 * Space: Hurl all subcubes outward
 * "O" key: Toggle outlines
 * "R" key: Reset to a single subcube

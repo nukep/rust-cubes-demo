@@ -4,15 +4,17 @@ extern crate cgmath;
 extern crate util;
 
 use cube::Cube;
+
 pub mod cube;
+mod physics;
 
 /// GameState describes all non-derivable data required to present a frame.
 /// It is perpetually updated and controlled by the game loop.
 pub struct GameState {
     pub cube: cube::Cube,
     pub show_outlines: bool,
-    orientation: cgmath::Quaternion<f32>,
-    zoom: f32
+    orientation: physics::QuaternionMotion<f32>,
+    zoom: physics::ScalarMotion<f32>
 }
 
 /// One-off data derived from GameState and used by the renderer.
@@ -48,14 +50,19 @@ impl GameState {
         GameState {
             cube: Cube::new(),
             show_outlines: false,
-            orientation: Rotation::look_at(&Vector3::new(0.5, 0.25, 0.5), &Vector3::new(0.0, 1.0, 0.0)),
-            zoom: 1.0
+            orientation: physics::QuaternionMotion::new(
+                Rotation::look_at(&Vector3::new(0.5, 0.25, 0.5), &Vector3::new(0.0, 1.0, 0.0)),
+                0.5
+            ),
+            zoom: physics::ScalarMotion::new(1.0, 0.9)
         }
     }
 
     pub fn steps_per_second() -> int { 60 }
 
     pub fn step(&mut self, viewport: (i32,i32), input: &GameInput) -> GameStepResult {
+        let frac = 1.0 / GameState::steps_per_second() as f32;
+
         if input.hurl_all {
             self.cube.try_hurl_all(4.0);
         } else if input.rearrange {
@@ -80,17 +87,18 @@ impl GameState {
         }
 
         {
-            use cgmath::{Quaternion, Vector, Vector3, EuclideanVector};
-            let q_rotate_view = {
-                let (x,y) = input.rotate_view;
-                Quaternion::from_sv(0.0, Vector3::new(-y, x, 0.0).mul_s(2.0))
-            };
-            let d_orientation = q_rotate_view.mul_q(&self.orientation);
-            self.orientation = self.orientation.add_q(&d_orientation).normalize();
+            let (x,y) = input.rotate_view;
+            if (x,y) != (0.0,0.0) {
+                use cgmath::{Vector, Vector3};
+                let ang = Vector3::new(-y, x, 0.0).mul_s(32.0);
+                self.orientation.angular_momentum = ang;
+            }
         }
-        self.zoom -= input.zoom_view_change * 1.0/4.0;
+        self.zoom.change -= input.zoom_view_change * 1.0/2.0;
 
-        self.cube.step(1.0 / GameState::steps_per_second() as f32);
+        self.orientation.step(frac);
+        self.zoom.step(frac);
+        self.cube.step(frac);
 
         GameStepResult {
             projection_view: projection_view,
@@ -144,8 +152,8 @@ impl GameState {
         });
 
         let view = cgmath::Matrix4::identity()
-            .translate(0.0, 0.0, -1.0 + -(5.0f32.powf(self.zoom)))
-            .quaternion(&self.orientation);
+            .translate(0.0, 0.0, -1.0 + -(5.0f32.powf(self.zoom.scalar)))
+            .quaternion(&self.orientation.quaternion);
 
         projection * view
     }
