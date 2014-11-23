@@ -49,12 +49,13 @@ impl GameState {
 
         GameState {
             cube: Cube::new(),
-            show_outlines: false,
+            show_outlines: true,
             orientation: physics::QuaternionMotion::new(
                 Rotation::look_at(&Vector3::new(0.5, 0.25, 0.5), &Vector3::new(0.0, 1.0, 0.0)),
+                Vector3::new(0.0, 0.2, 0.0),
                 0.5
             ),
-            zoom: physics::ScalarMotion::new(1.0, 0.9)
+            zoom: physics::ScalarMotion::new(0.5, 0.2, 0.9)
         }
     }
 
