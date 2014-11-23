@@ -3,6 +3,16 @@ use std::rand::StdRng;
 use cgmath;
 use cgmath::{Vector, Vector3, Quaternion, Rotation, Ray3};
 
+// TEMPORARY FIX. Access to cgmath's Vector3::zero() method is unreachable,
+// but should return soon.
+trait Zero<T> { fn zero() -> T; }
+
+impl<S: cgmath::BaseFloat> Zero<Vector3<S>> for Vector3<S> {
+    fn zero() -> Vector3<S> {
+        Vector3::from_value(std::num::Float::zero())
+    }
+}
+
 struct CubeStateRearranging {
     p: f32,
     next_state: Box<CubeState>
@@ -32,7 +42,7 @@ pub struct Subcube {
 
 impl Cube {
     pub fn new() -> Cube {
-        let subcubes = vec![Subcube::from_segment(Vector3::zero(), 1.0)];
+        let subcubes = vec![Subcube::from_segment(Zero::zero(), 1.0)];
 
         Cube {
             subcubes: subcubes,
@@ -151,7 +161,7 @@ impl Cube {
                 None
             },
             CubeState::Resetting => {
-                self.subcubes = vec![Subcube::from_segment(Vector3::zero(), 1.0)];
+                self.subcubes = vec![Subcube::from_segment(Zero::zero(), 1.0)];
 
                 Some(CubeState::Simulating)
             },
@@ -285,9 +295,9 @@ impl Subcube {
             segment: segment,
             subcube_length: subcube_length,
             pos: segment,
-            vel: Vector3::zero(),
+            vel: Zero::zero(),
             orientation: Quaternion::identity(),
-            angular_momentum: Vector3::zero()
+            angular_momentum: Zero::zero()
         }
     }
 
@@ -357,8 +367,8 @@ impl Subcube {
     }
 
     fn cancel_momentum(&mut self) {
-        self.vel = Vector3::zero();
-        self.angular_momentum = Vector3::zero();
+        self.vel = Zero::zero();
+        self.angular_momentum = Zero::zero();
     }
 
     fn approach_original_arrangement(&mut self, frac: f32) {

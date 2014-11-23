@@ -4,6 +4,16 @@
 use cgmath::{Quaternion, Point3, Vector3, BaseFloat, Point, Vector};
 use std::num::Float;
 
+// TEMPORARY FIX. Access to cgmath's Vector3::zero() method is unreachable,
+// but should return soon.
+trait Zero<T> { fn zero() -> T; }
+
+impl<S: BaseFloat> Zero<Vector3<S>> for Vector3<S> {
+    fn zero() -> Vector3<S> {
+        Vector3::from_value(Float::zero())
+    }
+}
+
 fn integrate_decay<T: Float>(decay: T, time: T) -> T {
     // x^(1/time) = 1-decay
     // x = (1-decay)^time
@@ -41,7 +51,7 @@ impl<T: BaseFloat> QuaternionMotion<T> {
     pub fn new(quaternion: Quaternion<T>, decay: T) -> QuaternionMotion<T> {
         QuaternionMotion {
             quaternion: quaternion,
-            angular_momentum: Vector3::zero(),
+            angular_momentum: Zero::zero(),
             decay: decay
         }
     }
