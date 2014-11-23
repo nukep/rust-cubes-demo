@@ -1,4 +1,4 @@
-#version 150
+#version 130
 
 in vec3 fragment_coord;
 in vec3 npos;
