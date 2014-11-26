@@ -189,7 +189,7 @@ impl Game {
         'event: loop {
             match sdl2::event::poll_event() {
                 Event::Quit(_) => { return SDLEventLoopResult::Exit; },
-                Event::KeyDown(_, _, key, _, _) => {
+                Event::KeyDown(_, _, key, _, _, _) => {
                     if key == KeyCode::Escape {
                         return SDLEventLoopResult::Exit;
                     }
