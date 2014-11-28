@@ -116,7 +116,7 @@ impl GameState {
                 let post_project_v1 = Vector4::new(x, y, -1.0, 1.0);
                 let post_project_v2 = Vector4::new(x, y, 1.0, 1.0);
 
-                let inv_projection_view = projection_view.invert().unwrap();
+                let inv_projection_view = projection_view.invert().expect("Could not invert projection view");
                 let pre_project_p1 = Point3::from_homogeneous(&inv_projection_view.mul_v(&post_project_v1));
                 let pre_project_p2 = Point3::from_homogeneous(&inv_projection_view.mul_v(&post_project_v2));
 

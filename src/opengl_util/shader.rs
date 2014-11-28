@@ -62,7 +62,10 @@ impl Shader {
         let buf_ptr = buf.as_mut_ptr() as *mut gl::types::GLchar;
         unsafe { gl::GetShaderInfoLog(self.id, len, std::ptr::null_mut(), buf_ptr) };
 
-        String::from_utf8(buf).unwrap()
+        match String::from_utf8(buf) {
+            Ok(log) => log,
+            Err(vec) => panic!("Could not convert compilation log from buffer: {}", vec)
+        }
     }
 }
 
@@ -146,7 +149,10 @@ impl Program {
         let buf_ptr = buf.as_mut_ptr() as *mut gl::types::GLchar;
         unsafe { gl::GetProgramInfoLog(self.id, len, std::ptr::null_mut(), buf_ptr) };
 
-        String::from_utf8(buf).unwrap()
+        match String::from_utf8(buf) {
+            Ok(log) => log,
+            Err(vec) => panic!("Could not convert link log from buffer: {}", vec)
+        }
     }
 }
 

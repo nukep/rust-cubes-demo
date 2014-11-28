@@ -46,7 +46,10 @@ impl Cube {
 
         Cube {
             subcubes: subcubes,
-            rng: StdRng::new().unwrap(),
+            rng: match StdRng::new() {
+                Ok(rng) => rng,
+                Err(e) => panic!("Could not create RNG: {}", e)
+            },
             state: CubeState::Simulating
         }
     }

@@ -68,7 +68,7 @@ impl SDLInput {
     }
 
     pub fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
-        let scancode_int = scancode.to_uint().unwrap();
+        let scancode_int = scancode.to_uint().expect("Could not convert scancode to uint");
         self.keyboard.contains(&scancode_int)
     }
 
@@ -214,7 +214,7 @@ impl Game {
         let mut keyboard = HashSet::new();
         for (scancode, pressed) in keys.iter() {
             if *pressed {
-                keyboard.insert(ToPrimitive::to_uint(scancode).unwrap());
+                keyboard.insert(scancode.to_uint().expect("Could not convert scancode to uint"));
             }
         }
 

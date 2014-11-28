@@ -76,7 +76,7 @@ impl<'a> VertexArrayContext<'a> {
         unsafe { gl::DrawArrays(mode, first, count) };
     }
     pub fn draw_elements(&self, mode: GLuint, count: GLsizei, offset: uint) {
-        let data_type = self.va.ibo_ref.as_ref().unwrap().data_type;
+        let data_type = self.va.ibo_ref.as_ref().expect("No IBO is bound to the VAO").data_type;
         unsafe { gl::DrawElements(mode, count, data_type, std::ptr::null().offset(offset as int)) };
     }
 }
