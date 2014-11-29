@@ -7,9 +7,6 @@ authors = ["Dan Spencer <dan@atomicpotato.net>"]
 [dependencies.game]
 path = "src/game"
 
-[dependencies.opengl_util]
-path = "src/opengl_util"
-
 [dependencies.util]
 path = "src/util"
 

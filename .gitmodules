@@ -1,0 +1,4 @@
+[submodule "src/opengl_util"]
+	path = src/opengl_util
+	url = https://github.com/nukep/rust-opengl-util
+	branch = master

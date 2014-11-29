@@ -5,8 +5,7 @@ dependencies = [
  "cgmath 0.0.1 (git+https://github.com/bjz/cgmath-rs)",
  "game 0.0.1",
  "gl 0.0.1 (git+https://github.com/bjz/gl-rs)",
- "opengl_util 0.0.1",
- "sdl2 0.0.3 (git+https://github.com/AngryLawyer/rust-sdl2)",
+ "sdl2 0.0.4 (git+https://github.com/AngryLawyer/rust-sdl2)",
  "time 0.0.3 (git+https://github.com/rust-lang/time)",
  "util 0.0.1",
 ]
@@ -58,21 +57,14 @@ version = "0.0.2"
 source = "git+https://github.com/bjz/gl-rs#591e56b7cfa254664985f1a2a032134c0fd69155"
 
 [[package]]
-name = "opengl_util"
-version = "0.0.1"
-dependencies = [
- "gl 0.0.1 (git+https://github.com/bjz/gl-rs)",
-]
-
-[[package]]
 name = "rust-xml"
 version = "0.1.0"
 source = "git+https://github.com/netvl/rust-xml#8feef8eab34cc1a9431870be3b2eccf0343dae19"
 
 [[package]]
 name = "sdl2"
-version = "0.0.3"
-source = "git+https://github.com/AngryLawyer/rust-sdl2#03b6c219d05f6b3f07a47cc47d013b8ccc4c7f5b"
+version = "0.0.4"
+source = "git+https://github.com/AngryLawyer/rust-sdl2#2d5567a4b56b8ba681020937d4bf242b5c220132"
 
 [[package]]
 name = "time"

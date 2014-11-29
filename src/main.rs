@@ -3,12 +3,13 @@
 extern crate cgmath;
 extern crate game;
 extern crate gl;
-extern crate opengl_util;
 extern crate sdl2;
 extern crate time;
 extern crate util;
 
 mod sdl_opengl;
+#[allow(dead_code)]
+mod opengl_util;
 
 // Statically link SDL2 (libSDL2.a)
 // Link the required Windows dependencies
