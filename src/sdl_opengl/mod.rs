@@ -137,15 +137,16 @@ impl Game {
     pub fn new(width: int, height: int) -> Result<Game, String> {
         sdl2::init(sdl2::INIT_VIDEO);
 
-        sdl2::video::gl_set_attribute(sdl2::video::GLContextMajorVersion, 3);
-        sdl2::video::gl_set_attribute(sdl2::video::GLContextMinorVersion, 0);
-        sdl2::video::gl_set_attribute(sdl2::video::GLDepthSize, 24);
-        sdl2::video::gl_set_attribute(sdl2::video::GLDoubleBuffer, 1);
+        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLContextMajorVersion, 3);
+        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLContextMinorVersion, 0);
+        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLDepthSize, 24);
+        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLDoubleBuffer, 1);
         sdl2::video::gl_set_attribute(
-            sdl2::video::GLContextProfileMask,
-            sdl2::video::ll::SDL_GL_CONTEXT_PROFILE_CORE as int);
+            sdl2::video::GLAttr::GLContextProfileMask,
+            sdl2::video::GLProfile::GLCoreProfile as int
+        );
 
-        let window = match sdl2::video::Window::new("Rust cubes demo", sdl2::video::PosCentered, sdl2::video::PosCentered, width, height, sdl2::video::OPENGL | sdl2::video::SHOWN | sdl2::video::RESIZABLE) {
+        let window = match sdl2::video::Window::new("Rust cubes demo", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, width, height, sdl2::video::OPENGL | sdl2::video::SHOWN | sdl2::video::RESIZABLE) {
             Ok(window) => window,
             Err(err) => return Err(format!("failed to create window: {}", err))
         };

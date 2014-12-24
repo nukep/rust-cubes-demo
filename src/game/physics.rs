@@ -7,7 +7,7 @@ use std::num::Float;
 fn integrate_decay<T: Float>(decay: T, time: T) -> T {
     // x^(1/time) = 1-decay
     // x = (1-decay)^time
-    Sub::sub(&Float::one(), &decay).powf(time)
+    Sub::sub(Float::one(), decay).powf(time)
 }
 
 pub struct ScalarMotion<T> {

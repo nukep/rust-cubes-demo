@@ -30,6 +30,7 @@ pub struct Cube {
     state: CubeState
 }
 
+#[deriving(Copy)]
 pub struct Subcube {
     pub segment: Vector3<f32>,
     pub subcube_length: f32,
@@ -249,14 +250,14 @@ impl Cube {
 
         impl<'a> PartialEq for (uint, &'a Subcube, f32) {
             fn eq(&self, other: &(uint, &'a Subcube, f32)) -> bool {
-                let (self_dist, other_dist) = (self.val2(), other.val2());
+                let (self_dist, other_dist) = (self.2, other.2);
                 self_dist.eq(&other_dist)
             }
         }
 
         impl<'a> PartialOrd for (uint, &'a Subcube, f32) {
             fn partial_cmp(&self, other: &(uint, &'a Subcube, f32)) -> Option<Ordering> {
-                let (self_dist, other_dist) = (self.val2(), other.val2());
+                let (self_dist, other_dist) = (self.2, other.2);
                 self_dist.partial_cmp(&other_dist)
             }
         }
