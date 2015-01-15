@@ -25,7 +25,7 @@ pub struct GameStepResult {
     pub selected_subcube: Option<uint>
 }
 
-#[deriving(Default)]
+#[derive(Default)]
 pub struct GameInput {
     pub hurl_all: bool,
     pub explode_subcube: bool,

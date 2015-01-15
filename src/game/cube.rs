@@ -1,17 +1,7 @@
 use std;
 use std::rand::StdRng;
 use cgmath;
-use cgmath::{Vector, Vector3, Quaternion, Rotation, Ray3};
-
-// TEMPORARY FIX. Access to cgmath's Vector3::zero() method is unreachable,
-// but should return soon.
-trait Zero<T> { fn zero() -> T; }
-
-impl<S: cgmath::BaseFloat> Zero<Vector3<S>> for Vector3<S> {
-    fn zero() -> Vector3<S> {
-        Vector3::from_value(std::num::Float::zero())
-    }
-}
+use cgmath::{Vector, Vector3, Quaternion, Rotation, Ray3, Zero};
 
 struct CubeStateRearranging {
     p: f32,
@@ -30,7 +20,7 @@ pub struct Cube {
     state: CubeState
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct Subcube {
     pub segment: Vector3<f32>,
     pub subcube_length: f32,
@@ -59,7 +49,9 @@ impl Cube {
     ///
     /// Note: A reference to self is passed to the callback to get around
     /// Rust's borrowing rules.
-    fn try_on_simulating<R>(&mut self, cb: |&mut Cube| -> R) -> Option<R> {
+    fn try_on_simulating<F, R>(&mut self, cb: F) -> Option<R> where
+        F: FnOnce(&mut Cube) -> R
+    {
         match self.state {
             CubeState::Simulating => {
                 Some(cb(self))
@@ -84,7 +76,7 @@ impl Cube {
             }
             _self.state = CubeState::Rearranging(CubeStateRearranging{
                 p: 0.0,
-                next_state: box CubeState::Simulating
+                next_state: Box::new(CubeState::Simulating)
             })
         });
     }
@@ -96,60 +88,57 @@ impl Cube {
             }
             _self.state = CubeState::Rearranging(CubeStateRearranging{
                 p: 0.0,
-                next_state: box CubeState::Resetting
+                next_state: Box::new(CubeState::Resetting)
             })
         });
     }
 
-    fn subdivide_subcube(&mut self, index: uint, subdivide_count: uint) -> Vec<uint> {
+    fn subdivide_subcube(&mut self, index: usize, subdivide_count: u32) -> Vec<usize> {
         use std::num::Int;
 
         assert!(subdivide_count > 0);
-        let original = *self.subcubes.index(&index);
+        let original = self.subcubes[index];
 
         // Alter the subcube at the specified index
-        *(self.subcubes.index_mut(&index)) = original.get_subdivided_subcube(subdivide_count, (0,0,0));
+        self.subcubes[index] = original.get_subdivided_subcube(subdivide_count, (0,0,0));
 
         // Push `subdivide_count**3 - 1` new subcubes at the end of the `subcubes` vector
         let subdivide_count_cubed = subdivide_count.pow(3);
-        self.subcubes.reserve(subdivide_count_cubed-1);
+        self.subcubes.reserve(subdivide_count_cubed as usize - 1);
 
         let new_subcubes_idx = self.subcubes.len();
 
-        for i in range(1, subdivide_count_cubed) {
+        self.subcubes.extend((1..subdivide_count_cubed).map(|i| {
             let x = i%subdivide_count;
             let y = (i/subdivide_count)%(subdivide_count);
             let z = i/subdivide_count/subdivide_count;
 
-            self.subcubes.push(original.get_subdivided_subcube(subdivide_count, (x,y,z)));
-        }
+            original.get_subdivided_subcube(subdivide_count, (x,y,z))
+        }));
 
-        let mut result = Vec::with_capacity(subdivide_count_cubed);
+        let mut result = Vec::with_capacity(subdivide_count_cubed as usize);
         result.push(index);
-
-        for i in range(new_subcubes_idx, self.subcubes.len()) {
-            result.push(i);
-        }
+        result.extend((new_subcubes_idx..self.subcubes.len()));
 
         result
     }
 
-    pub fn explode_subcube(&mut self, index: uint, force: f32, subdivide_count: uint) {
-        let origin = self.subcubes.index(&index).pos;
+    pub fn explode_subcube(&mut self, index: usize, force: f32, subdivide_count: u32) {
+        let origin = self.subcubes[index].pos;
 
         let subcubes_idx = self.subdivide_subcube(index, subdivide_count);
-        for subcube_idx in subcubes_idx.iter() {
-            let subcube = self.subcubes.index_mut(subcube_idx);
+        for &subcube_idx in subcubes_idx.iter() {
+            let subcube = &mut self.subcubes[subcube_idx];
             subcube.hurl(force, &origin, &mut self.rng);
         }
     }
 
-    pub fn explode_subcube_if_at_least(&mut self, index: uint, force: f32, subdivide_count: uint, min_subcube_length: f32) {
-        if self.subcubes.index(&index).subcube_length >= min_subcube_length {
+    pub fn explode_subcube_if_at_least(&mut self, index: usize, force: f32, subdivide_count: u32, min_subcube_length: f32) {
+        if self.subcubes[index].subcube_length >= min_subcube_length {
             self.explode_subcube(index, force, subdivide_count);
         } else {
             // Still hurl the subcube
-            let s = self.subcubes.index_mut(&index);
+            let s = &mut self.subcubes[index];
             let origin = s.pos;
             s.hurl(force, &origin, &mut self.rng);
         }
@@ -205,15 +194,16 @@ impl Cube {
     /// Returns a Some tuple with the index and a reference to the subcube
     /// if one intersects with the ray.
     /// Returns None if no subcube intersects with the ray.
-    pub fn get_subcube_from_ray(&self, ray: &Ray3<f32>) -> Option<(uint, &Subcube)> {
+    pub fn get_subcube_from_ray(&self, ray: &Ray3<f32>) -> Option<(usize, &Subcube)> {
         use cgmath::{Ray, Point, EuclideanVector};
         use util::compare::CompareSmallest;
+        use std::cmp::Ordering;
 
         fn intersects_with_unit_cube(ray: &Ray3<f32>) -> Option<f32> {
             use cgmath::{Intersect, Point, Point3, Plane};
             // The unit cube is at the origin, from -0.5..+0.5
 
-            static PLANES: [Plane<f32>, ..6] = [
+            static PLANES: [Plane<f32>; 6] = [
                 Plane { n: Vector3 {x:  1.0, y:  0.0, z:  0.0}, d: 0.5 },
                 Plane { n: Vector3 {x: -1.0, y:  0.0, z:  0.0}, d: 0.5 },
                 Plane { n: Vector3 {x:  0.0, y:  1.0, z:  0.0}, d: 0.5 },
@@ -246,31 +236,29 @@ impl Cube {
         }
 
         // Option tuple of: index, subcube, distance
-        let mut closest_subcube: Option<(uint, &Subcube, f32)> = None;
+        let mut closest_subcube: Option<(usize, &Subcube, f32)> = None;
 
-        impl<'a> PartialEq for (uint, &'a Subcube, f32) {
-            fn eq(&self, other: &(uint, &'a Subcube, f32)) -> bool {
+        impl<'a> PartialEq for (usize, &'a Subcube, f32) {
+            fn eq(&self, other: &(usize, &'a Subcube, f32)) -> bool {
                 let (self_dist, other_dist) = (self.2, other.2);
                 self_dist.eq(&other_dist)
             }
         }
 
-        impl<'a> PartialOrd for (uint, &'a Subcube, f32) {
-            fn partial_cmp(&self, other: &(uint, &'a Subcube, f32)) -> Option<Ordering> {
+        impl<'a> PartialOrd for (usize, &'a Subcube, f32) {
+            fn partial_cmp(&self, other: &(usize, &'a Subcube, f32)) -> Option<Ordering> {
                 let (self_dist, other_dist) = (self.2, other.2);
                 self_dist.partial_cmp(&other_dist)
             }
         }
 
-        for i in range(0, self.subcubes.len()) {
-            let subcube = self.subcubes.index(&i);
-
+        for (index, subcube) in self.subcubes.iter().enumerate() {
             // Transform ray relative to a non-rotated unit cube
             let new_ray = {
                 let q = subcube.orientation.invert();
                 let origin = ray.origin
                     // Make ray relative to center of subcube
-                    .add_v(&subcube.pos.neg())
+                    .add_v(&(-subcube.pos))
                     .div_s(subcube.subcube_length);
 
                 // Rotate ray around center of subcube
@@ -280,7 +268,7 @@ impl Cube {
             match intersects_with_unit_cube(&new_ray) {
                 Some(dist) => {
                     assert!(dist >= 0.0);
-                    closest_subcube.set_if_smallest((i, subcube, dist*subcube.subcube_length));
+                    closest_subcube.set_if_smallest((index, subcube, dist*subcube.subcube_length));
                 },
                 None => ()
             };
@@ -313,13 +301,13 @@ impl Subcube {
             .quaternion(&self.orientation)
     }
 
-    fn get_subdivided_subcube(&self, subdivide_count: uint, loc: (uint, uint, uint)) -> Subcube {
+    fn get_subdivided_subcube(&self, subdivide_count: u32, loc: (u32, u32, u32)) -> Subcube {
         use cgmath::{Matrix, Matrix4};
         use util::matrix::MatrixBuilder;
 
         /// Vector is relative to corner of subcube, bounded 0..1
         /// i.e. location of (0,0,0) will return a Vector of (0,0,0)
-        fn new_pos(subdivide_count: uint, loc: (uint, uint, uint)) -> Vector3<f32> {
+        fn new_pos(subdivide_count: u32, loc: (u32, u32, u32)) -> Vector3<f32> {
             let (x,y,z) = loc;
             Vector3::new(x as f32, y as f32, z as f32).div_s(subdivide_count as f32).add_s((1.0 / subdivide_count as f32) / 2.0)
         }

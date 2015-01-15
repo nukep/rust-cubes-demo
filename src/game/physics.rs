@@ -1,5 +1,5 @@
-/// Note that "Physics" is in massive quotation marks.
-/// This does not aim to be a realistic MKS physics simulation.
+///! Note that "Physics" is in massive quotation marks.
+///! This does not aim to be a realistic MKS physics simulation.
 
 use cgmath::{Quaternion, Point3, Vector3, BaseFloat, Point, Vector};
 use std::num::Float;
@@ -7,7 +7,8 @@ use std::num::Float;
 fn integrate_decay<T: Float>(decay: T, time: T) -> T {
     // x^(1/time) = 1-decay
     // x = (1-decay)^time
-    Sub::sub(Float::one(), decay).powf(time)
+    let one: T = Float::one();
+    (one - decay).powf(time)
 }
 
 pub struct ScalarMotion<T> {

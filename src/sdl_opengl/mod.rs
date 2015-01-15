@@ -13,7 +13,7 @@ pub struct Game {
     renderer: Renderer,
     state: GameState,
 
-    mouse_wheel_absolute: (int, int)
+    mouse_wheel_absolute: (i32, i32)
 }
 
 enum SDLEventLoopResult {
@@ -21,13 +21,13 @@ enum SDLEventLoopResult {
     Exit
 }
 
-#[deriving(Clone)]
+#[derive(Clone)]
 struct SDLInput {
     /// sdl2::scancode::ScanCode doesn't implement Clone, so we need to store an integer representation
     keyboard: HashSet<uint>,
     mouse: Option<(sdl2::mouse::MouseState, int, int)>,
     mouse_in_focus: bool,
-    mouse_wheel_absolute: (int, int)
+    mouse_wheel_absolute: (i32, i32)
 }
 impl SDLInput {
     pub fn new() -> SDLInput {
@@ -68,6 +68,7 @@ impl SDLInput {
     }
 
     pub fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
+        use std::num::ToPrimitive;
         let scancode_int = scancode.to_uint().expect("Could not convert scancode to uint");
         self.keyboard.contains(&scancode_int)
     }
@@ -215,6 +216,7 @@ impl Game {
         let mut keyboard = HashSet::new();
         for (scancode, pressed) in keys.iter() {
             if *pressed {
+                use std::num::ToPrimitive;
                 keyboard.insert(scancode.to_uint().expect("Could not convert scancode to uint"));
             }
         }
@@ -293,7 +295,7 @@ impl Game {
                     let d = time::precise_time_s() - current_frame.time;
                     let ms = 1000/fps as int - (d*1000.0) as int;
                     if ms > 0 {
-                        sdl2::timer::delay(ms as uint)
+                        sdl2::timer::delay(ms as usize)
                     }
                 },
                 None => ()
