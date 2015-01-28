@@ -1,4 +1,5 @@
 /target
+.cargo
 
 # .dll, .a files for linking on Windows
 *.dll

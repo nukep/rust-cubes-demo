@@ -1,5 +1,3 @@
-#![feature(macro_rules)]
-
 extern crate cgmath;
 extern crate util;
 
@@ -22,7 +20,7 @@ pub struct GameState {
 /// use by the renderer.
 pub struct GameStepResult {
     pub projection_view: cgmath::Matrix4<f32>,
-    pub selected_subcube: Option<uint>
+    pub selected_subcube: Option<usize>
 }
 
 #[derive(Default)]
@@ -59,7 +57,7 @@ impl GameState {
         }
     }
 
-    pub fn steps_per_second() -> int { 60 }
+    pub fn steps_per_second() -> u32 { 60 }
 
     pub fn step(&mut self, viewport: (i32,i32), input: &GameInput) -> GameStepResult {
         let frac = 1.0 / GameState::steps_per_second() as f32;
@@ -107,7 +105,7 @@ impl GameState {
         }
     }
 
-    fn solve_selected_subcube(&self, projection_view: cgmath::Matrix4<f32>, pointer: Option<(f32, f32)>) -> Option<uint> {
+    fn solve_selected_subcube(&self, projection_view: cgmath::Matrix4<f32>, pointer: Option<(f32, f32)>) -> Option<usize> {
         use cgmath::{Matrix, Vector, Vector4, Point, Point3, EuclideanVector, Ray, Ray3};
 
         let mouse_ray: Option<Ray3<f32>> = match pointer {

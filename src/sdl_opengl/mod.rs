@@ -24,8 +24,8 @@ enum SDLEventLoopResult {
 #[derive(Clone)]
 struct SDLInput {
     /// sdl2::scancode::ScanCode doesn't implement Clone, so we need to store an integer representation
-    keyboard: HashSet<uint>,
-    mouse: Option<(sdl2::mouse::MouseState, int, int)>,
+    keyboard: HashSet<u32>,
+    mouse: Option<(sdl2::mouse::MouseState, i32, i32)>,
     mouse_in_focus: bool,
     mouse_wheel_absolute: (i32, i32)
 }
@@ -50,7 +50,7 @@ impl SDLInput {
         !old.is_mouse_button_down(button) && self.is_mouse_button_down(button)
     }
 
-    pub fn get_mouse_delta(&self, old: &SDLInput, button: sdl2::mouse::MouseState) -> Option<(int, int)> {
+    pub fn get_mouse_delta(&self, old: &SDLInput, button: sdl2::mouse::MouseState) -> Option<(i32, i32)> {
         match (self.mouse, old.mouse) {
             (Some((n_state, n_x, n_y)), Some((o_state, o_x, o_y))) => {
                 if n_state.intersects(button) && o_state.intersects(button) {
@@ -69,7 +69,7 @@ impl SDLInput {
 
     pub fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
         use std::num::ToPrimitive;
-        let scancode_int = scancode.to_uint().expect("Could not convert scancode to uint");
+        let scancode_int = scancode.to_u32().expect("Could not convert scancode to uint");
         self.keyboard.contains(&scancode_int)
     }
 
@@ -82,13 +82,13 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
     use sdl2::scancode::ScanCode;
 
     /// Screen coordinates (pixels) to normalized device coordinates (0..1)
-    fn screen_to_ndc(viewport: (i32, i32), screen: (int, int)) -> (f32, f32) {
+    fn screen_to_ndc(viewport: (i32, i32), screen: (i32, i32)) -> (f32, f32) {
         let (width, height) = viewport;
         let (x, y) = screen;
         ((x as f32 / width as f32 - 0.5)*2.0, -(y as f32 / height as f32 - 0.5)*2.0)
     }
 
-    fn screen_delta_to_y_ratio(viewport: (i32, i32), screen_delta: (int, int)) -> (f32, f32) {
+    fn screen_delta_to_y_ratio(viewport: (i32, i32), screen_delta: (i32, i32)) -> (f32, f32) {
         let (width, height) = viewport;
         let (x, y) = screen_delta;
         let x_aspect = (width as f32) / (height as f32);
@@ -135,7 +135,7 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
 }
 
 impl Game {
-    pub fn new(width: int, height: int) -> Result<Game, String> {
+    pub fn new(width: u16, height: u16) -> Result<Game, String> {
         sdl2::init(sdl2::INIT_VIDEO);
 
         sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLContextMajorVersion, 3);
@@ -144,10 +144,10 @@ impl Game {
         sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLDoubleBuffer, 1);
         sdl2::video::gl_set_attribute(
             sdl2::video::GLAttr::GLContextProfileMask,
-            sdl2::video::GLProfile::GLCoreProfile as int
+            sdl2::video::GLProfile::GLCoreProfile as i32
         );
 
-        let window = match sdl2::video::Window::new("Rust cubes demo", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, width, height, sdl2::video::OPENGL | sdl2::video::SHOWN | sdl2::video::RESIZABLE) {
+        let window = match sdl2::video::Window::new("Rust cubes demo", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, width as i32, height as i32, sdl2::video::OPENGL | sdl2::video::SHOWN | sdl2::video::RESIZABLE) {
             Ok(window) => window,
             Err(err) => return Err(format!("failed to create window: {}", err))
         };
@@ -217,7 +217,7 @@ impl Game {
         for (scancode, pressed) in keys.iter() {
             if *pressed {
                 use std::num::ToPrimitive;
-                keyboard.insert(scancode.to_uint().expect("Could not convert scancode to uint"));
+                keyboard.insert(scancode.to_u32().expect("Could not convert scancode to uint"));
             }
         }
 
@@ -293,9 +293,9 @@ impl Game {
             match self.frame_limit() {
                 Some(fps) => {
                     let d = time::precise_time_s() - current_frame.time;
-                    let ms = 1000/fps as int - (d*1000.0) as int;
+                    let ms = 1000/fps as u32 - (d*1000.0) as u32;
                     if ms > 0 {
-                        sdl2::timer::delay(ms as usize)
+                        sdl2::timer::delay(ms)
                     }
                 },
                 None => ()
