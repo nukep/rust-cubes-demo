@@ -190,13 +190,13 @@ impl Game {
 
         'event: loop {
             match sdl2::event::poll_event() {
-                Event::Quit(_) => { return SDLEventLoopResult::Exit; },
-                Event::KeyDown(_, _, key, _, _, _) => {
+                Event::Quit{..} => { return SDLEventLoopResult::Exit; },
+                Event::KeyDown { keycode: key, .. } => {
                     if key == KeyCode::Escape {
                         return SDLEventLoopResult::Exit;
                     }
                 },
-                Event::MouseWheel(_, _, _, x, y) => {
+                Event::MouseWheel { x, y, .. } => {
                     let (abs_x, abs_y) = self.mouse_wheel_absolute;
                     self.mouse_wheel_absolute = (abs_x + x, abs_y + y);
                 },
