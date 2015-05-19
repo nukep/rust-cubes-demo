@@ -2,12 +2,12 @@
 ///! This does not aim to be a realistic MKS physics simulation.
 
 use cgmath::{Quaternion, Point3, Vector3, BaseFloat, Point, Vector};
-use std::num::Float;
+use num::traits::{Float, Zero, One};
 
-fn integrate_decay<T: Float>(decay: T, time: T) -> T {
+fn integrate_decay<T: Float + One>(decay: T, time: T) -> T {
     // x^(1/time) = 1-decay
     // x = (1-decay)^time
-    let one: T = Float::one();
+    let one: T = One::one();
     (one - decay).powf(time)
 }
 
@@ -47,7 +47,7 @@ impl<T: BaseFloat> QuaternionMotion<T> {
         }
     }
     pub fn step(&mut self, frac: T) {
-        let q_angular_momentum = Quaternion::from_sv(Float::zero(), self.angular_momentum.mul_s(frac));
+        let q_angular_momentum = Quaternion::from_sv(Zero::zero(), self.angular_momentum.mul_s(frac));
         let d_quaternion = q_angular_momentum.mul_q(&self.quaternion);
         self.quaternion = self.quaternion.add_q(&d_quaternion).normalize();
         self.angular_momentum = self.angular_momentum.mul_s(integrate_decay(self.decay, frac));

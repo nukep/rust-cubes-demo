@@ -1,5 +1,3 @@
-#![feature(link_args)]
-
 extern crate cgmath;
 extern crate game;
 extern crate gl;
@@ -21,6 +19,4 @@ pub fn main() {
         Ok(()) => (),
         Err(msg) => panic!("sdl_opengl::Game::run: {}", msg)
     }
-
-    sdl2::quit();
 }

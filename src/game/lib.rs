@@ -1,5 +1,7 @@
 extern crate cgmath;
 extern crate util;
+extern crate rand;
+extern crate num;
 
 use cube::Cube;
 
@@ -138,17 +140,16 @@ impl GameState {
 
     fn solve_projection_view(&self, viewport: (i32,i32)) -> cgmath::Matrix4<f32> {
         use util::matrix::MatrixBuilder;
-        use std::num::Float;
 
         let viewport_aspect = match viewport {
             (width, height) => width as f32 / height as f32
         };
-        let projection = cgmath::ToMatrix4::to_matrix4(&cgmath::PerspectiveFov {
+        let projection: cgmath::Matrix4<f32> = cgmath::PerspectiveFov {
             fovy: cgmath::Deg { s: 45.0 },
             aspect: viewport_aspect,
             near: 0.1,
             far: 100.0
-        });
+        }.into();
 
         let view = cgmath::Matrix4::identity()
             .translate(0.0, 0.0, -1.0 + -(5.0f32.powf(self.zoom.scalar)))

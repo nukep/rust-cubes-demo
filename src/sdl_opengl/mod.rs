@@ -8,6 +8,7 @@ use self::renderer::Renderer;
 mod renderer;
 
 pub struct Game {
+    sdl: sdl2::Sdl,
     window: sdl2::video::Window,
     _context: sdl2::video::GLContext,
     renderer: Renderer,
@@ -24,7 +25,7 @@ enum SDLEventLoopResult {
 #[derive(Clone)]
 struct SDLInput {
     /// sdl2::scancode::ScanCode doesn't implement Clone, so we need to store an integer representation
-    keyboard: HashSet<u32>,
+    keyboard: HashSet<sdl2::scancode::ScanCode>,
     mouse: Option<(sdl2::mouse::MouseState, i32, i32)>,
     mouse_in_focus: bool,
     mouse_wheel_absolute: (i32, i32)
@@ -68,9 +69,7 @@ impl SDLInput {
     }
 
     pub fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
-        use std::num::ToPrimitive;
-        let scancode_int = scancode.to_u32().expect("Could not convert scancode to uint");
-        self.keyboard.contains(&scancode_int)
+        self.keyboard.contains(&scancode)
     }
 
     pub fn is_scancode_newly_down(&self, old: &SDLInput, scancode: sdl2::scancode::ScanCode) -> bool {
@@ -136,7 +135,7 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
 
 impl Game {
     pub fn new(width: u16, height: u16) -> Result<Game, String> {
-        sdl2::init(sdl2::INIT_VIDEO);
+        let sdl = try!(sdl2::init(sdl2::INIT_VIDEO));
 
         sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLContextMajorVersion, 3);
         sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLContextMinorVersion, 0);
@@ -147,7 +146,7 @@ impl Game {
             sdl2::video::GLProfile::GLCoreProfile as i32
         );
 
-        let window = match sdl2::video::Window::new("Rust cubes demo", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, width as i32, height as i32, sdl2::video::OPENGL | sdl2::video::SHOWN | sdl2::video::RESIZABLE) {
+        let window = match sdl2::video::Window::new(&sdl, "Rust cubes demo", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, width as i32, height as i32, sdl2::video::OPENGL | sdl2::video::SHOWN | sdl2::video::RESIZABLE) {
             Ok(window) => window,
             Err(err) => return Err(format!("failed to create window: {}", err))
         };
@@ -158,18 +157,13 @@ impl Game {
         };
 
         // Initialize the OpenGL function pointers
-        gl::load_with(|s: &str| unsafe {
-            use std;
-            match sdl2::video::gl_get_proc_address(s) {
-                Some(ptr) => std::mem::transmute(ptr),
-                None => std::ptr::null()
-            }
-        });
+        gl::load_with(sdl2::video::gl_get_proc_address);
 
         let renderer = try!(Renderer::new());
         let state = GameState::new();
 
         Ok(Game {
+            sdl: sdl,
             window: window,
             _context: context,
             renderer: renderer,
@@ -188,8 +182,10 @@ impl Game {
         use sdl2::event::Event;
         use sdl2::keycode::KeyCode;
 
-        'event: loop {
-            match sdl2::event::poll_event() {
+        let mut events = self.sdl.event_pump();
+
+        for event in events.poll_iter() {
+            match event {
                 Event::Quit{..} => { return SDLEventLoopResult::Exit; },
                 Event::KeyDown { keycode: key, .. } => {
                     if key == KeyCode::Escape {
@@ -200,7 +196,6 @@ impl Game {
                     let (abs_x, abs_y) = self.mouse_wheel_absolute;
                     self.mouse_wheel_absolute = (abs_x + x, abs_y + y);
                 },
-                Event::None => { break 'event; },
                 _ => ()
             }
         }
@@ -214,10 +209,9 @@ impl Game {
         };
 
         let mut keyboard = HashSet::new();
-        for (scancode, pressed) in keys.iter() {
-            if *pressed {
-                use std::num::ToPrimitive;
-                keyboard.insert(scancode.to_u32().expect("Could not convert scancode to uint"));
+        for (scancode, pressed) in keys {
+            if pressed {
+                keyboard.insert(scancode);
             }
         }
 
@@ -320,7 +314,7 @@ impl Game {
     }
 
     fn get_viewport(&self) -> (i32,i32) {
-        match self.window.get_size() {
+        match self.window.properties_getters(&self.sdl.event_pump()).get_size() {
             (w, h) => (w as i32, h as i32)
         }
     }

@@ -1,5 +1,6 @@
 use std;
-use std::rand::StdRng;
+use rand;
+use rand::StdRng;
 use cgmath;
 use cgmath::{Vector, Vector3, Quaternion, Rotation, Ray3, Zero};
 
@@ -20,7 +21,7 @@ pub struct Cube {
     state: CubeState
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct Subcube {
     pub segment: Vector3<f32>,
     pub subcube_length: f32,
@@ -94,8 +95,6 @@ impl Cube {
     }
 
     fn subdivide_subcube(&mut self, index: usize, subdivide_count: u32) -> Vec<usize> {
-        use std::num::Int;
-
         assert!(subdivide_count > 0);
         let original = self.subcubes[index];
 
@@ -214,7 +213,7 @@ impl Cube {
 
             let mut closest: Option<f32> = None;
 
-            for plane in PLANES.as_slice().iter() {
+            for plane in PLANES.iter() {
                 match Intersect::intersection(&(*plane, *ray)) {
                     Some(point) => {
                         let Point3{x, y, z} = point;
@@ -235,22 +234,24 @@ impl Cube {
             closest
         }
 
-        // Option tuple of: index, subcube, distance
-        let mut closest_subcube: Option<(usize, &Subcube, f32)> = None;
+        struct SubcubeDistance<'a>(usize, &'a Subcube, f32);
 
-        impl<'a> PartialEq for (usize, &'a Subcube, f32) {
-            fn eq(&self, other: &(usize, &'a Subcube, f32)) -> bool {
+        impl<'a> PartialEq for SubcubeDistance<'a> {
+            fn eq(&self, other: &SubcubeDistance) -> bool {
                 let (self_dist, other_dist) = (self.2, other.2);
                 self_dist.eq(&other_dist)
             }
         }
 
-        impl<'a> PartialOrd for (usize, &'a Subcube, f32) {
-            fn partial_cmp(&self, other: &(usize, &'a Subcube, f32)) -> Option<Ordering> {
+        impl<'a> PartialOrd for SubcubeDistance<'a> {
+            fn partial_cmp(&self, other: &SubcubeDistance) -> Option<Ordering> {
                 let (self_dist, other_dist) = (self.2, other.2);
                 self_dist.partial_cmp(&other_dist)
             }
         }
+
+        // Option tuple of: index, subcube, distance
+        let mut closest_subcube: Option<SubcubeDistance> = None;
 
         for (index, subcube) in self.subcubes.iter().enumerate() {
             // Transform ray relative to a non-rotated unit cube
@@ -268,14 +269,14 @@ impl Cube {
             match intersects_with_unit_cube(&new_ray) {
                 Some(dist) => {
                     assert!(dist >= 0.0);
-                    closest_subcube.set_if_smallest((index, subcube, dist*subcube.subcube_length));
+                    closest_subcube.set_if_smallest(SubcubeDistance(index, subcube, dist*subcube.subcube_length));
                 },
                 None => ()
             };
         }
 
         match closest_subcube {
-            Some((idx, subcube, _)) => Some((idx, subcube)),
+            Some(SubcubeDistance(idx, subcube, _)) => Some((idx, subcube)),
             None => None
         }
     }
@@ -341,9 +342,9 @@ impl Subcube {
     ///
     /// The subcube will tend to repel from the specified origin.
     /// Some psudo-random variance will also be added to the velocity and angular momentum using the specified RNG.
-    pub fn hurl<RNG: std::rand::Rng>(&mut self, force: f32, origin: &Vector3<f32>, rng: &mut RNG) {
-        fn random_vector3<RNG: std::rand::Rng>(rng: &mut RNG) -> Vector3<f32> {
-            fn rand<RNG: std::rand::Rng>(rng: &mut RNG) -> f32 {
+    pub fn hurl<RNG: rand::Rng>(&mut self, force: f32, origin: &Vector3<f32>, rng: &mut RNG) {
+        fn random_vector3<RNG: rand::Rng>(rng: &mut RNG) -> Vector3<f32> {
+            fn rand<RNG: rand::Rng>(rng: &mut RNG) -> f32 {
                 rng.next_f32() * 2.0 - 1.0
             }
             Vector3::new(rand(rng), rand(rng), rand(rng))
@@ -375,6 +376,8 @@ impl Subcube {
     }
 
     fn step(&mut self, frac: f32) {
+        use std::f32;
+        
         // **Velocity** //
         self.pos.add_self_v(&self.vel.mul_s(frac));
 
@@ -388,7 +391,7 @@ impl Subcube {
         // Slow down 30% per second
         // x^(1/frac) = 0.7
         // x = 0.7 ^ frac
-        let m = std::num::Float::powf(0.7, frac);
+        let m = f32::powf(0.7, frac);
         self.vel.mul_self_s(m);
         self.angular_momentum.mul_self_s(m);
     }
