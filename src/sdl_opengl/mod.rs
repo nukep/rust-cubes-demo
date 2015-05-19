@@ -40,21 +40,21 @@ impl SDLInput {
         }
     }
 
-    pub fn is_mouse_button_down(&self, button: sdl2::mouse::MouseState) -> bool {
+    pub fn is_mouse_button_down(&self, button: sdl2::mouse::Mouse) -> bool {
         match self.mouse {
-            Some((state, _, _)) => state.intersects(button),
+            Some((state, _, _)) => state.button(button),
             None => false
         }
     }
 
-    pub fn is_mouse_button_newly_down(&self, old: &SDLInput, button: sdl2::mouse::MouseState) -> bool {
+    pub fn is_mouse_button_newly_down(&self, old: &SDLInput, button: sdl2::mouse::Mouse) -> bool {
         !old.is_mouse_button_down(button) && self.is_mouse_button_down(button)
     }
 
-    pub fn get_mouse_delta(&self, old: &SDLInput, button: sdl2::mouse::MouseState) -> Option<(i32, i32)> {
+    pub fn get_mouse_delta(&self, old: &SDLInput, button: sdl2::mouse::Mouse) -> Option<(i32, i32)> {
         match (self.mouse, old.mouse) {
             (Some((n_state, n_x, n_y)), Some((o_state, o_x, o_y))) => {
-                if n_state.intersects(button) && o_state.intersects(button) {
+                if n_state.button(button) && o_state.button(button) {
                     match (n_x - o_x, n_y - o_y) {
                         // A delta of (0, 0) means there was no change
                         (0, 0) => None,
@@ -78,6 +78,7 @@ impl SDLInput {
 }
 
 fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInput {
+    use sdl2::mouse::Mouse;
     use sdl2::scancode::ScanCode;
 
     /// Screen coordinates (pixels) to normalized device coordinates (0..1)
@@ -95,8 +96,8 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
     }
 
     let hurl_all = new.is_scancode_newly_down(old, ScanCode::Space);
-    let explode_subcube = new.is_mouse_button_down(sdl2::mouse::LEFTMOUSESTATE);
-    let rearrange = new.is_mouse_button_newly_down(old, sdl2::mouse::RIGHTMOUSESTATE);
+    let explode_subcube = new.is_mouse_button_down(Mouse::Left);
+    let rearrange = new.is_mouse_button_newly_down(old, Mouse::Right);
     let reset = new.is_scancode_newly_down(old, ScanCode::R);
     let toggle_show_outlines = new.is_scancode_newly_down(old, ScanCode::O);
     let screen_pointer = match new.mouse_in_focus {
@@ -112,7 +113,7 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
         None => None
     };
 
-    let rotate_view = match new.get_mouse_delta(old, sdl2::mouse::MIDDLEMOUSESTATE) {
+    let rotate_view = match new.get_mouse_delta(old, Mouse::Middle) {
         Some(d) => screen_delta_to_y_ratio(viewport, d),
         None => (0.0, 0.0)
     };
@@ -135,18 +136,16 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
 
 impl Game {
     pub fn new(width: u16, height: u16) -> Result<Game, String> {
-        let sdl = try!(sdl2::init(sdl2::INIT_VIDEO));
+        use sdl2::video::{GLProfile, gl_attr};
 
-        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLContextMajorVersion, 3);
-        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLContextMinorVersion, 0);
-        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLDepthSize, 24);
-        sdl2::video::gl_set_attribute(sdl2::video::GLAttr::GLDoubleBuffer, 1);
-        sdl2::video::gl_set_attribute(
-            sdl2::video::GLAttr::GLContextProfileMask,
-            sdl2::video::GLProfile::GLCoreProfile as i32
-        );
+        let sdl = try!(sdl2::init().video().build());
 
-        let window = match sdl2::video::Window::new(&sdl, "Rust cubes demo", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, width as i32, height as i32, sdl2::video::OPENGL | sdl2::video::SHOWN | sdl2::video::RESIZABLE) {
+        gl_attr::set_context_profile(GLProfile::Core);
+        gl_attr::set_context_version(3, 0);
+        gl_attr::set_depth_size(24);
+        gl_attr::set_double_buffer(true);
+
+        let window = match sdl.window("Rust cubes demo", width as u32, height as u32).position_centered().opengl().resizable().build() {
             Ok(window) => window,
             Err(err) => return Err(format!("failed to create window: {}", err))
         };
@@ -314,9 +313,7 @@ impl Game {
     }
 
     fn get_viewport(&self) -> (i32,i32) {
-        match self.window.properties_getters(&self.sdl.event_pump()).get_size() {
-            (w, h) => (w as i32, h as i32)
-        }
+        self.window.properties_getters().get_size()
     }
 }
 
