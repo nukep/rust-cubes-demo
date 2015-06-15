@@ -24,8 +24,7 @@ enum SDLEventLoopResult {
 
 #[derive(Clone)]
 struct SDLInput {
-    /// sdl2::scancode::ScanCode doesn't implement Clone, so we need to store an integer representation
-    keyboard: HashSet<sdl2::scancode::ScanCode>,
+    keyboard: HashSet<sdl2::keyboard::Keycode>,
     mouse: Option<(sdl2::mouse::MouseState, i32, i32)>,
     mouse_in_focus: bool,
     mouse_wheel_absolute: (i32, i32)
@@ -68,18 +67,18 @@ impl SDLInput {
         }
     }
 
-    pub fn is_scancode_down(&self, scancode: sdl2::scancode::ScanCode) -> bool {
-        self.keyboard.contains(&scancode)
+    pub fn is_keycode_down(&self, keycode: sdl2::keyboard::Keycode) -> bool {
+        self.keyboard.contains(&keycode)
     }
 
-    pub fn is_scancode_newly_down(&self, old: &SDLInput, scancode: sdl2::scancode::ScanCode) -> bool {
-        !old.is_scancode_down(scancode) && self.is_scancode_down(scancode)
+    pub fn is_keycode_newly_down(&self, old: &SDLInput, keycode: sdl2::keyboard::Keycode) -> bool {
+        !old.is_keycode_down(keycode) && self.is_keycode_down(keycode)
     }
 }
 
 fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInput {
     use sdl2::mouse::Mouse;
-    use sdl2::scancode::ScanCode;
+    use sdl2::keyboard::Keycode;
 
     /// Screen coordinates (pixels) to normalized device coordinates (0..1)
     fn screen_to_ndc(viewport: (i32, i32), screen: (i32, i32)) -> (f32, f32) {
@@ -95,11 +94,11 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
         ((x as f32 / width as f32)*x_aspect, -(y as f32 / height as f32))
     }
 
-    let hurl_all = new.is_scancode_newly_down(old, ScanCode::Space);
+    let hurl_all = new.is_keycode_newly_down(old, Keycode::Space);
     let explode_subcube = new.is_mouse_button_down(Mouse::Left);
     let rearrange = new.is_mouse_button_newly_down(old, Mouse::Right);
-    let reset = new.is_scancode_newly_down(old, ScanCode::R);
-    let toggle_show_outlines = new.is_scancode_newly_down(old, ScanCode::O);
+    let reset = new.is_keycode_newly_down(old, Keycode::R);
+    let toggle_show_outlines = new.is_keycode_newly_down(old, Keycode::O);
     let screen_pointer = match new.mouse_in_focus {
         true => match new.mouse {
             Some((_, x, y)) => Some((x, y)),
@@ -179,17 +178,13 @@ impl Game {
 
     fn event_loop(&mut self) -> SDLEventLoopResult {
         use sdl2::event::Event;
-        use sdl2::keycode::KeyCode;
+        use sdl2::keyboard::Keycode;
 
-        let mut events = self.sdl.event_pump();
-
-        for event in events.poll_iter() {
+        for event in self.sdl.event_pump().poll_iter() {
             match event {
                 Event::Quit{..} => { return SDLEventLoopResult::Exit; },
-                Event::KeyDown { keycode: key, .. } => {
-                    if key == KeyCode::Escape {
-                        return SDLEventLoopResult::Exit;
-                    }
+                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                    return SDLEventLoopResult::Exit;
                 },
                 Event::MouseWheel { x, y, .. } => {
                     let (abs_x, abs_y) = self.mouse_wheel_absolute;
@@ -200,19 +195,13 @@ impl Game {
         }
 
         let mouse = sdl2::mouse::get_mouse_state();
-        let keys = sdl2::keyboard::get_keyboard_state();
 
         let mouse_in_focus = match sdl2::mouse::get_mouse_focus() {
             Some(_window) => true,
             None => false
         };
 
-        let mut keyboard = HashSet::new();
-        for (scancode, pressed) in keys {
-            if pressed {
-                keyboard.insert(scancode);
-            }
-        }
+        let keyboard = self.sdl.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
 
         SDLEventLoopResult::HasInput(SDLInput {
             keyboard: keyboard,
