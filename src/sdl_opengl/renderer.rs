@@ -4,6 +4,8 @@ use game::{GameState, GameStepResult};
 use opengl_util;
 use opengl_util::vertex::VertexArray;
 
+use cgmath::Matrix;
+
 pub struct Renderer {
     program: opengl_util::shader::Program,
     vao: VertexArray
@@ -44,8 +46,6 @@ impl Renderer {
     }
 
     pub fn render(&mut self, state: &GameState, step_result: &GameStepResult, viewport: (i32, i32)) {
-        use cgmath::FixedArray;
-
         let (viewport_width, viewport_height) = viewport;
 
         unsafe {
@@ -64,7 +64,7 @@ impl Renderer {
         let u_cube_size = self.program.get_uniform("cube_size");
 
         self.program.use_program(|uniform| {
-            uniform.set_mat4(self.program.get_uniform("projection_view"), step_result.projection_view.as_fixed());
+            unsafe { uniform.set_mat4_ptr(self.program.get_uniform("projection_view"), step_result.projection_view.as_ptr()) };
             uniform.set_bool(u_show_outlines, state.show_outlines);
 
             self.vao.bind_vao(|vao_ctx| {
@@ -83,7 +83,7 @@ impl Renderer {
                     };
 
                     uniform.set_bool(u_hovered, hovered);
-                    uniform.set_mat4(u_model, model.as_fixed());
+                    unsafe { uniform.set_mat4_ptr(u_model, model.as_ptr()) };
                     uniform.set_vec3(u_cube_pos, pos);
                     uniform.set_float(u_cube_size, subcube.subcube_length);
 

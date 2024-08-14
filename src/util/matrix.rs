@@ -1,4 +1,4 @@
-use cgmath::{Matrix, Matrix3, Matrix4, Vector3, Quaternion, Rad};
+use cgmath::{Matrix3, Matrix4, Vector3, Quaternion, Rad, SquareMatrix, BaseFloat};
 
 pub trait MatrixBuilder<S: Copy, V, Q>: Sized {
     fn scale(&self, x: S, y: S, z: S) -> Self;
@@ -21,36 +21,36 @@ pub trait MatrixBuilder<S: Copy, V, Q>: Sized {
 // I can't figure out generics right now
 // I'm always getting cryptic "the parameter type `S` may not live long enough" errors
 // Why, though?! BaseFloat should satisfy every trait that's used by Vector3...
-type S = f32;
+// type S = f32;
 
-// impl<S: BaseFloat> MatrixBuilder<S, Vector3<S>> for Matrix4<S>
-impl MatrixBuilder<S, Vector3<S>, Quaternion<S>> for Matrix4<S> {
+impl<S: BaseFloat> MatrixBuilder<S, Vector3<S>, Quaternion<S>> for Matrix4<S> {
+// impl MatrixBuilder<S, Vector3<S>, Quaternion<S>> for Matrix4<S> {
     fn scale(&self, x: S, y: S, z: S) -> Matrix4<S> {
         self.scale_v(&Vector3::new(x,y,z))
     }
 
     fn scale_v(&self, value: &Vector3<S>) -> Matrix4<S> {
-        self.mul_m(&Matrix3::from_diagonal(value).into())
+        self * Matrix4::from(Matrix3::from_diagonal(*value))
     }
 
     fn scale_s(&self, value: S) -> Matrix4<S> {
-        self.mul_m(&Matrix3::from_value(value).into())
+        self * Matrix4::from(Matrix3::from_value(value))
     }
 
     fn rotate_x(&self, rad: S) -> Matrix4<S> {
-        self.mul_m(&Matrix3::from_angle_x(Rad { s: rad }).into())
+        self * Matrix4::from_angle_x(Rad(rad))
     }
 
     fn rotate_y(&self, rad: S) -> Matrix4<S> {
-        self.mul_m(&Matrix3::from_angle_y(Rad { s: rad }).into())
+        self * Matrix4::from_angle_y(Rad(rad))
     }
 
     fn rotate_z(&self, rad: S) -> Matrix4<S> {
-        self.mul_m(&Matrix3::from_angle_z(Rad { s: rad }).into())
+        self * Matrix4::from_angle_z(Rad(rad))
     }
 
     fn quaternion(&self, value: &Quaternion<S>) -> Matrix4<S> {
-        self.mul_m(&(*value).into())
+        self * Matrix4::from(*value)
     }
 
     fn translate(&self, x: S, y: S, z: S) -> Matrix4<S> {
@@ -58,7 +58,7 @@ impl MatrixBuilder<S, Vector3<S>, Quaternion<S>> for Matrix4<S> {
     }
 
     fn translate_v(&self, disp: &Vector3<S>) -> Matrix4<S> {
-        self.mul_m(&Matrix4::from_translation(disp))
+        self * Matrix4::from_translation(*disp)
     }
 
 }

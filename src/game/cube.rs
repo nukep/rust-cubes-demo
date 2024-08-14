@@ -1,8 +1,10 @@
 use std;
 use rand;
-use rand::StdRng;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use cgmath;
-use cgmath::{Vector, Vector3, Quaternion, Rotation, Ray3, Zero};
+use cgmath::{Vector3, Quaternion, Rotation, Zero, Array, One, InnerSpace, VectorSpace};
+use collision::{Ray3};
 
 struct CubeStateRearranging {
     p: f32,
@@ -38,10 +40,7 @@ impl Cube {
 
         Cube {
             subcubes: subcubes,
-            rng: match StdRng::new() {
-                Ok(rng) => rng,
-                Err(e) => panic!("Could not create RNG: {}", e)
-            },
+            rng: StdRng::from_entropy(),
             state: CubeState::Simulating
         }
     }
@@ -165,7 +164,7 @@ impl Cube {
                 // Go to the next state after 1.5 seconds
                 s.p += frac;
                 match s.p {
-                    0.0...1.5 => None,
+                    0.0..=1.5 => None,
                     _ => {
                         for subcube in self.subcubes.iter_mut() {
                             subcube.reset();
@@ -194,35 +193,36 @@ impl Cube {
     /// if one intersects with the ray.
     /// Returns None if no subcube intersects with the ray.
     pub fn get_subcube_from_ray(&self, ray: &Ray3<f32>) -> Option<(usize, &Subcube)> {
-        use cgmath::{Ray, Point, EuclideanVector};
+        use collision::Ray;
         use util::compare::CompareSmallest;
         use std::cmp::Ordering;
 
         fn intersects_with_unit_cube(ray: &Ray3<f32>) -> Option<f32> {
-            use cgmath::{Intersect, Point, Point3, Plane};
+            use cgmath::Point3;
+            use collision::{Continuous, Plane};
             // The unit cube is at the origin, from -0.5..+0.5
 
             static PLANES: [Plane<f32>; 6] = [
-                Plane { n: Vector3 {x:  1.0, y:  0.0, z:  0.0}, d: 0.5 },
-                Plane { n: Vector3 {x: -1.0, y:  0.0, z:  0.0}, d: 0.5 },
-                Plane { n: Vector3 {x:  0.0, y:  1.0, z:  0.0}, d: 0.5 },
-                Plane { n: Vector3 {x:  0.0, y: -1.0, z:  0.0}, d: 0.5 },
-                Plane { n: Vector3 {x:  0.0, y:  0.0, z:  1.0}, d: 0.5 },
-                Plane { n: Vector3 {x:  0.0, y:  0.0, z: -1.0}, d: 0.5 },
+                Plane { n: Vector3::new( 1.0,  0.0,  0.0), d: 0.5 },
+                Plane { n: Vector3::new(-1.0,  0.0,  0.0), d: 0.5 },
+                Plane { n: Vector3::new( 0.0,  1.0,  0.0), d: 0.5 },
+                Plane { n: Vector3::new( 0.0, -1.0,  0.0), d: 0.5 },
+                Plane { n: Vector3::new( 0.0,  0.0,  1.0), d: 0.5 },
+                Plane { n: Vector3::new( 0.0,  0.0, -1.0), d: 0.5 },
             ];
 
             let mut closest: Option<f32> = None;
 
             for plane in PLANES.iter() {
-                match Intersect::intersection(&(*plane, *ray)) {
+                match plane.intersection(ray) {
                     Some(point) => {
                         let Point3{x, y, z} = point;
 
                         match (x, y, z) {
                             // Intersected point must be within bounds
-                            (-0.5...0.5, -0.5...0.5, -0.5...0.5) => {
-                                let diff = cgmath::Point::sub_p(&point, &ray.origin);
-                                closest.set_if_smallest(diff.length());
+                            (-0.5..=0.5, -0.5..=0.5, -0.5..=0.5) => {
+                                let diff = point - ray.origin;
+                                closest.set_if_smallest(diff.magnitude());
                             },
                             _ => ()
                         }
@@ -257,13 +257,11 @@ impl Cube {
             // Transform ray relative to a non-rotated unit cube
             let new_ray = {
                 let q = subcube.orientation.invert();
-                let origin = ray.origin
-                    // Make ray relative to center of subcube
-                    .add_v(&(-subcube.pos))
-                    .div_s(subcube.subcube_length);
+                // Make ray relative to center of subcube
+                let origin = (ray.origin - subcube.pos) / subcube.subcube_length;
 
                 // Rotate ray around center of subcube
-                Ray::new(q.rotate_point(&origin), q.rotate_vector(&ray.direction))
+                Ray::new(q.rotate_point(origin), q.rotate_vector(ray.direction))
             };
 
             match intersects_with_unit_cube(&new_ray) {
@@ -289,36 +287,36 @@ impl Subcube {
             subcube_length: subcube_length,
             pos: segment,
             vel: Zero::zero(),
-            orientation: Quaternion::identity(),
+            orientation: Quaternion::one(),
             angular_momentum: Zero::zero()
         }
     }
 
     pub fn get_model_matrix(&self) -> cgmath::Matrix4<f32> {
         use util::matrix::MatrixBuilder;
-        cgmath::Matrix4::identity()
+        cgmath::Matrix4::one()
             .translate_v(&self.pos)
             .scale_s(self.subcube_length)
             .quaternion(&self.orientation)
     }
 
     fn get_subdivided_subcube(&self, subdivide_count: u32, loc: (u32, u32, u32)) -> Subcube {
-        use cgmath::{Matrix, Matrix4};
+        use cgmath::Matrix4;
         use util::matrix::MatrixBuilder;
 
         /// Vector is relative to corner of subcube, bounded 0..1
         /// i.e. location of (0,0,0) will return a Vector of (0,0,0)
         fn new_pos(subdivide_count: u32, loc: (u32, u32, u32)) -> Vector3<f32> {
             let (x,y,z) = loc;
-            Vector3::new(x as f32, y as f32, z as f32).div_s(subdivide_count as f32).add_s((1.0 / subdivide_count as f32) / 2.0)
+            (Vector3::new(x as f32, y as f32, z as f32) / (subdivide_count as f32)) + Vector3::from_value((1.0 / subdivide_count as f32) / 2.0)
         }
 
         fn matrix_mul_v3(mtx: &Matrix4<f32>, v: &Vector3<f32>) -> Vector3<f32> {
-            mtx.mul_v(&v.extend(1.0)).truncate()
+            (mtx * v.extend(1.0)).truncate()
         }
 
         // Transform subcube from a no-rotation, unit cube with its origin at the lower-front-left corner
-        let segment_model = Matrix4::identity()
+        let segment_model = Matrix4::one()
             .translate_v(&self.segment)
             .scale_s(self.subcube_length)
             .translate_s(-0.5);
@@ -345,14 +343,14 @@ impl Subcube {
     pub fn hurl<RNG: rand::Rng>(&mut self, force: f32, origin: &Vector3<f32>, rng: &mut RNG) {
         fn random_vector3<RNG: rand::Rng>(rng: &mut RNG) -> Vector3<f32> {
             fn rand<RNG: rand::Rng>(rng: &mut RNG) -> f32 {
-                rng.next_f32() * 2.0 - 1.0
+                rng.gen_range(-1.0..=1.0)
             }
             Vector3::new(rand(rng), rand(rng), rand(rng))
         }
 
-        let v = self.pos.sub_v(origin).mul_s(16.0);
-        self.vel = (v + random_vector3(rng).mul_s(4.0)).mul_s(force*0.1);
-        self.angular_momentum = (v + random_vector3(rng).mul_s(0.5)).mul_s(force*0.5);
+        let v = (self.pos - origin) * (16.0);
+        self.vel = (v + random_vector3(rng) * (4.0)) * (force*0.1);
+        self.angular_momentum = (v + random_vector3(rng) * (0.5)) * (force*0.5);
     }
 
     fn reset(&mut self) {
@@ -365,34 +363,33 @@ impl Subcube {
     }
 
     fn approach_original_arrangement(&mut self, frac: f32) {
-        use cgmath::{EuclideanVector};
         let target_subcube = Subcube::from_segment(self.segment, self.subcube_length);
 
         // TODO - figure out the math on this (using frac)
         let lerp_amount = 0.1;
 
-        self.pos.lerp_self(&target_subcube.pos, lerp_amount);
-        self.orientation = self.orientation.nlerp(&target_subcube.orientation, lerp_amount);
+        self.pos = self.pos.lerp(target_subcube.pos, lerp_amount);
+        self.orientation = self.orientation.nlerp(target_subcube.orientation, lerp_amount);
     }
 
     fn step(&mut self, frac: f32) {
         use std::f32;
         
         // **Velocity** //
-        self.pos.add_self_v(&self.vel.mul_s(frac));
+        self.pos += self.vel * frac;
 
         // **Angular momentum** //
-        let q_angular_momentum = Quaternion::from_sv(0.0, self.angular_momentum.mul_s(frac));
+        let q_angular_momentum = Quaternion::from_sv(0.0, self.angular_momentum * frac);
 
         // Derivative of orientation
-        let d_orientation = q_angular_momentum.mul_q(&self.orientation);
-        self.orientation = self.orientation.add_q(&d_orientation).normalize();
+        let d_orientation = q_angular_momentum * self.orientation;
+        self.orientation = (self.orientation + d_orientation).normalize();
 
         // Slow down 30% per second
         // x^(1/frac) = 0.7
         // x = 0.7 ^ frac
         let m = f32::powf(0.7, frac);
-        self.vel.mul_self_s(m);
-        self.angular_momentum.mul_self_s(m);
+        self.vel *= m;
+        self.angular_momentum *= m;
     }
 }

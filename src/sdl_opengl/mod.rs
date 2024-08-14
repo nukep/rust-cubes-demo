@@ -1,6 +1,7 @@
 use sdl2;
 use gl;
-use time;
+use std::time;
+use std::time::{UNIX_EPOCH, SystemTime, Duration};
 use game::{GameState, GameInput, GameStepResult};
 use std::collections::HashSet;
 use self::renderer::Renderer;
@@ -25,7 +26,7 @@ enum SDLEventLoopResult {
 #[derive(Clone)]
 struct SDLInput {
     keyboard: HashSet<sdl2::keyboard::Keycode>,
-    mouse: Option<(sdl2::mouse::MouseState, i32, i32)>,
+    mouse: Option<sdl2::mouse::MouseState>,
     mouse_in_focus: bool,
     mouse_wheel_absolute: (i32, i32)
 }
@@ -39,22 +40,22 @@ impl SDLInput {
         }
     }
 
-    pub fn is_mouse_button_down(&self, button: sdl2::mouse::Mouse) -> bool {
+    pub fn is_mouse_button_down(&self, button: sdl2::mouse::MouseButton) -> bool {
         match self.mouse {
-            Some((state, _, _)) => state.button(button),
+            Some(state) => state.is_mouse_button_pressed(button),
             None => false
         }
     }
 
-    pub fn is_mouse_button_newly_down(&self, old: &SDLInput, button: sdl2::mouse::Mouse) -> bool {
+    pub fn is_mouse_button_newly_down(&self, old: &SDLInput, button: sdl2::mouse::MouseButton) -> bool {
         !old.is_mouse_button_down(button) && self.is_mouse_button_down(button)
     }
 
-    pub fn get_mouse_delta(&self, old: &SDLInput, button: sdl2::mouse::Mouse) -> Option<(i32, i32)> {
+    pub fn get_mouse_delta(&self, old: &SDLInput, button: sdl2::mouse::MouseButton) -> Option<(i32, i32)> {
         match (self.mouse, old.mouse) {
-            (Some((n_state, n_x, n_y)), Some((o_state, o_x, o_y))) => {
-                if n_state.button(button) && o_state.button(button) {
-                    match (n_x - o_x, n_y - o_y) {
+            (Some(n_state), Some(o_state)) => {
+                if n_state.is_mouse_button_pressed(button) && o_state.is_mouse_button_pressed(button) {
+                    match (n_state.x() - o_state.x(), n_state.y() - o_state.y()) {
                         // A delta of (0, 0) means there was no change
                         (0, 0) => None,
                         delta => Some(delta)
@@ -77,7 +78,7 @@ impl SDLInput {
 }
 
 fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInput {
-    use sdl2::mouse::Mouse;
+    use sdl2::mouse::MouseButton;
     use sdl2::keyboard::Keycode;
 
     /// Screen coordinates (pixels) to normalized device coordinates (0..1)
@@ -95,13 +96,13 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
     }
 
     let hurl_all = new.is_keycode_newly_down(old, Keycode::Space);
-    let explode_subcube = new.is_mouse_button_down(Mouse::Left);
-    let rearrange = new.is_mouse_button_newly_down(old, Mouse::Right);
+    let explode_subcube = new.is_mouse_button_down(MouseButton::Left);
+    let rearrange = new.is_mouse_button_newly_down(old, MouseButton::Right);
     let reset = new.is_keycode_newly_down(old, Keycode::R);
     let toggle_show_outlines = new.is_keycode_newly_down(old, Keycode::O);
     let screen_pointer = match new.mouse_in_focus {
         true => match new.mouse {
-            Some((_, x, y)) => Some((x, y)),
+            Some(state) => Some((state.x(), state.y())),
             None => None
         },
         false => None
@@ -112,7 +113,7 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
         None => None
     };
 
-    let rotate_view = match new.get_mouse_delta(old, Mouse::Middle) {
+    let rotate_view = match new.get_mouse_delta(old, MouseButton::Middle) {
         Some(d) => screen_delta_to_y_ratio(viewport, d),
         None => (0.0, 0.0)
     };
@@ -135,16 +136,18 @@ fn solve_input(old: &SDLInput, new: &SDLInput, viewport: (i32, i32)) -> GameInpu
 
 impl Game {
     pub fn new(width: u16, height: u16) -> Result<Game, String> {
-        use sdl2::video::{GLProfile, gl_attr};
+        use sdl2::video::GLProfile;
 
-        let sdl = try!(sdl2::init().video().build());
+        let sdl = sdl2::init()?;
+        let video = sdl.video()?;
 
-        gl_attr::set_context_profile(GLProfile::Core);
-        gl_attr::set_context_version(3, 0);
-        gl_attr::set_depth_size(24);
-        gl_attr::set_double_buffer(true);
+        let gl_attr = video.gl_attr();
+        gl_attr.set_context_profile(GLProfile::Core);
+        gl_attr.set_context_version(3, 0);
+        gl_attr.set_depth_size(24);
+        gl_attr.set_double_buffer(true);
 
-        let window = match sdl.window("Rust cubes demo", width as u32, height as u32).position_centered().opengl().resizable().build() {
+        let window = match video.window("Rust cubes demo", width as u32, height as u32).position_centered().opengl().resizable().build() {
             Ok(window) => window,
             Err(err) => return Err(format!("failed to create window: {}", err))
         };
@@ -155,9 +158,9 @@ impl Game {
         };
 
         // Initialize the OpenGL function pointers
-        gl::load_with(sdl2::video::gl_get_proc_address);
+        gl::load_with(|name| video.gl_get_proc_address(name) as *const _);
 
-        let renderer = try!(Renderer::new());
+        let renderer = Renderer::new()?;
         let state = GameState::new();
 
         Ok(Game {
@@ -180,7 +183,7 @@ impl Game {
         use sdl2::event::Event;
         use sdl2::keyboard::Keycode;
 
-        for event in self.sdl.event_pump().poll_iter() {
+        for event in self.sdl.event_pump().unwrap().poll_iter() {
             match event {
                 Event::Quit{..} => { return SDLEventLoopResult::Exit; },
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
@@ -194,14 +197,11 @@ impl Game {
             }
         }
 
-        let mouse = sdl2::mouse::get_mouse_state();
+        let mouse = self.sdl.event_pump().unwrap().mouse_state();
 
-        let mouse_in_focus = match sdl2::mouse::get_mouse_focus() {
-            Some(_window) => true,
-            None => false
-        };
+        let mouse_in_focus = self.window.has_mouse_focus();
 
-        let keyboard = self.sdl.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
+        let keyboard = self.sdl.event_pump().unwrap().keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
 
         SDLEventLoopResult::HasInput(SDLInput {
             keyboard: keyboard,
@@ -226,7 +226,7 @@ impl Game {
 
         // Define an initial "last frame".
         let mut last_frame = Frame {
-            time: time::precise_time_s(),
+            time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64(),
             viewport: self.get_viewport()
         };
 
@@ -249,7 +249,7 @@ impl Game {
             };
 
             let current_frame = Frame {
-                time: time::precise_time_s(),
+                time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64(),
                 viewport: self.get_viewport()
             };
 
@@ -274,10 +274,10 @@ impl Game {
 
             match self.frame_limit() {
                 Some(fps) => {
-                    let d = time::precise_time_s() - current_frame.time;
+                    let d = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64() - current_frame.time;
                     let ms = 1000/fps as u32 - (d*1000.0) as u32;
                     if ms > 0 {
-                        sdl2::timer::delay(ms)
+                        std::thread::sleep(Duration::from_millis(ms as u64))
                     }
                 },
                 None => ()
@@ -302,7 +302,8 @@ impl Game {
     }
 
     fn get_viewport(&self) -> (i32,i32) {
-        self.window.properties_getters().get_size()
+        let (w,h) = self.window.size();
+        (w as i32, h as i32)
     }
 }
 
@@ -316,13 +317,13 @@ impl FPSMeter {
     pub fn new(interval: f64) -> FPSMeter {
         FPSMeter {
             interval: interval,
-            time_measure_begin: time::precise_time_s(),
+            time_measure_begin: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64(),
             frames_since: 0,
             last_fps: None
         }
     }
     pub fn meter_frame(&mut self) {
-        let time = time::precise_time_s();
+        let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64();
         let delta = time - self.time_measure_begin;
 
         if delta >= self.interval {

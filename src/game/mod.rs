@@ -1,12 +1,11 @@
 extern crate cgmath;
-extern crate util;
 extern crate rand;
 extern crate num;
 
-use cube::Cube;
-
 pub mod cube;
 mod physics;
+
+use self::cube::Cube;
 
 /// GameState describes all non-derivable data required to present a frame.
 /// It is perpetually updated and controlled by the game loop.
@@ -51,7 +50,7 @@ impl GameState {
             cube: Cube::new(),
             show_outlines: true,
             orientation: physics::QuaternionMotion::new(
-                Rotation::look_at(&Vector3::new(0.5, 0.25, 0.5), &Vector3::new(0.0, 1.0, 0.0)),
+                Rotation::look_at(Vector3::new(0.5, 0.25, 0.5), Vector3::new(0.0, 1.0, 0.0)),
                 Vector3::new(0.0, 0.2, 0.0),
                 0.5
             ),
@@ -90,8 +89,8 @@ impl GameState {
         {
             let (x,y) = input.rotate_view;
             if (x,y) != (0.0,0.0) {
-                use cgmath::{Vector, Vector3};
-                let ang = Vector3::new(-y, x, 0.0).mul_s(32.0);
+                use cgmath::Vector3;
+                let ang = Vector3::new(-y, x, 0.0) * 32.0;
                 self.orientation.angular_momentum = ang;
             }
         }
@@ -108,7 +107,8 @@ impl GameState {
     }
 
     fn solve_selected_subcube(&self, projection_view: cgmath::Matrix4<f32>, pointer: Option<(f32, f32)>) -> Option<usize> {
-        use cgmath::{Matrix, Vector, Vector4, Point, Point3, EuclideanVector, Ray, Ray3};
+        use cgmath::{Vector4, Point3, SquareMatrix, InnerSpace};
+        use collision::{Ray, Ray3};
 
         let mouse_ray: Option<Ray3<f32>> = match pointer {
             Some((x, y)) => {
@@ -117,10 +117,10 @@ impl GameState {
                 let post_project_v2 = Vector4::new(x, y, 1.0, 1.0);
 
                 let inv_projection_view = projection_view.invert().expect("Could not invert projection view");
-                let pre_project_p1 = Point3::from_homogeneous(&inv_projection_view.mul_v(&post_project_v1));
-                let pre_project_p2 = Point3::from_homogeneous(&inv_projection_view.mul_v(&post_project_v2));
+                let pre_project_p1 = Point3::from_homogeneous(inv_projection_view * post_project_v1);
+                let pre_project_p2 = Point3::from_homogeneous(inv_projection_view * post_project_v2);
 
-                let direction = pre_project_p2.sub_p(&pre_project_p1).normalize();
+                let direction = (pre_project_p2 - pre_project_p1).normalize();
 
                 Some(Ray::new(pre_project_p1, direction))
             },
@@ -140,18 +140,18 @@ impl GameState {
 
     fn solve_projection_view(&self, viewport: (i32,i32)) -> cgmath::Matrix4<f32> {
         use util::matrix::MatrixBuilder;
-
+        use cgmath::One;
         let viewport_aspect = match viewport {
             (width, height) => width as f32 / height as f32
         };
         let projection: cgmath::Matrix4<f32> = cgmath::PerspectiveFov {
-            fovy: cgmath::Deg { s: 45.0 },
+            fovy: cgmath::Deg(45.0).into(),
             aspect: viewport_aspect,
             near: 0.1,
             far: 100.0
         }.into();
 
-        let view = cgmath::Matrix4::identity()
+        let view = cgmath::Matrix4::one()
             .translate(0.0, 0.0, -1.0 + -(5.0f32.powf(self.zoom.scalar)))
             .quaternion(&self.orientation.quaternion);
 

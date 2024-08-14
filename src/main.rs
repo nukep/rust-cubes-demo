@@ -1,13 +1,17 @@
 extern crate cgmath;
-extern crate game;
 extern crate gl;
 extern crate sdl2;
-extern crate time;
-extern crate util;
+extern crate rand;
+extern crate num;
+extern crate collision;
+// extern crate time;
 
 mod sdl_opengl;
 #[allow(dead_code)]
 mod opengl_util;
+
+pub mod game;
+pub mod util;
 
 pub fn main() {
     let mut sdl_game = match sdl_opengl::Game::new(800, 600) {

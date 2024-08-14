@@ -1,7 +1,7 @@
 ///! Note that "Physics" is in massive quotation marks.
 ///! This does not aim to be a realistic MKS physics simulation.
 
-use cgmath::{Quaternion, Point3, Vector3, BaseFloat, Point, Vector};
+use cgmath::{Quaternion, Point3, Vector3, BaseFloat, InnerSpace};
 use num::traits::{Float, Zero, One};
 
 fn integrate_decay<T: Float + One>(decay: T, time: T) -> T {
@@ -47,10 +47,10 @@ impl<T: BaseFloat> QuaternionMotion<T> {
         }
     }
     pub fn step(&mut self, frac: T) {
-        let q_angular_momentum = Quaternion::from_sv(Zero::zero(), self.angular_momentum.mul_s(frac));
-        let d_quaternion = q_angular_momentum.mul_q(&self.quaternion);
-        self.quaternion = self.quaternion.add_q(&d_quaternion).normalize();
-        self.angular_momentum = self.angular_momentum.mul_s(integrate_decay(self.decay, frac));
+        let q_angular_momentum = Quaternion::from_sv(Zero::zero(), self.angular_momentum * frac);
+        let d_quaternion = q_angular_momentum * self.quaternion;
+        self.quaternion = (self.quaternion + d_quaternion).normalize();
+        self.angular_momentum = self.angular_momentum * integrate_decay(self.decay, frac);
     }
 }
 
@@ -63,7 +63,7 @@ pub struct PointMotion<T: BaseFloat> {
 }
 impl<T: BaseFloat> PointMotion<T> {
     pub fn step(&mut self, frac: T) {
-        self.point.add_self_v(&self.velocity.mul_s(frac));
-        self.velocity.mul_self_s(integrate_decay(self.decay, frac));
+        self.point += self.velocity * frac;
+        self.velocity *= integrate_decay(self.decay, frac);
     }
 }
