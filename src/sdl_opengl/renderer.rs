@@ -1,8 +1,8 @@
 use gl;
-use game::{GameState, GameStepResult};
+use crate::game::{GameState, GameStepResult};
 
-use opengl_util;
-use opengl_util::vertex::VertexArray;
+use crate::opengl_util;
+use crate::opengl_util::vertex::VertexArray;
 
 use cgmath::Matrix;
 
@@ -12,7 +12,7 @@ pub struct Renderer {
 }
 
 fn load_default_program() -> opengl_util::shader::Program {
-    use opengl_util::shader::{Shader, Program};
+    use crate::opengl_util::shader::{Shader, Program};
 
     let vertex_source = include_str!("shaders/vertex.glsl");
     let fragment_source = include_str!("shaders/fragment.glsl");

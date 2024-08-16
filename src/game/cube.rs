@@ -194,7 +194,7 @@ impl Cube {
     /// Returns None if no subcube intersects with the ray.
     pub fn get_subcube_from_ray(&self, ray: &Ray3<f32>) -> Option<(usize, &Subcube)> {
         use collision::Ray;
-        use util::compare::CompareSmallest;
+        use crate::util::compare::CompareSmallest;
         use std::cmp::Ordering;
 
         fn intersects_with_unit_cube(ray: &Ray3<f32>) -> Option<f32> {
@@ -293,7 +293,7 @@ impl Subcube {
     }
 
     pub fn get_model_matrix(&self) -> cgmath::Matrix4<f32> {
-        use util::matrix::MatrixBuilder;
+        use crate::util::matrix::MatrixBuilder;
         cgmath::Matrix4::one()
             .translate_v(&self.pos)
             .scale_s(self.subcube_length)
@@ -302,7 +302,7 @@ impl Subcube {
 
     fn get_subdivided_subcube(&self, subdivide_count: u32, loc: (u32, u32, u32)) -> Subcube {
         use cgmath::Matrix4;
-        use util::matrix::MatrixBuilder;
+        use crate::util::matrix::MatrixBuilder;
 
         /// Vector is relative to corner of subcube, bounded 0..1
         /// i.e. location of (0,0,0) will return a Vector of (0,0,0)

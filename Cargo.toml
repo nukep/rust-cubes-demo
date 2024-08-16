@@ -1,8 +1,9 @@
 [package]
 
 name = "rust-cubes-demo"
-version = "0.0.1"
-authors = ["Dan Spencer <dan@atomicpotato.net>"]
+version = "0.0.2"
+authors = ["Danny Spencer <dan.spencer.np@gmail.com>"]
+edition = "2021"
 
 [dependencies]
 sdl2 = "0.37.0"
