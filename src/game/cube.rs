@@ -2,8 +2,9 @@ use std;
 use rand;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use cgmath;
-use cgmath::{Vector3, Quaternion, Rotation, Zero, Array, One, InnerSpace, VectorSpace};
+
+use cgmath::prelude::*;
+use cgmath::{Vector3, Quaternion};
 use collision::{Ray3};
 
 struct CubeStateRearranging {
@@ -116,7 +117,7 @@ impl Cube {
 
         let mut result = Vec::with_capacity(subdivide_count_cubed as usize);
         result.push(index);
-        result.extend((new_subcubes_idx..self.subcubes.len()));
+        result.extend(new_subcubes_idx..self.subcubes.len());
 
         result
     }
@@ -294,7 +295,7 @@ impl Subcube {
 
     pub fn get_model_matrix(&self) -> cgmath::Matrix4<f32> {
         use crate::util::matrix::MatrixBuilder;
-        cgmath::Matrix4::one()
+        cgmath::Matrix4::identity()
             .translate_v(&self.pos)
             .scale_s(self.subcube_length)
             .quaternion(&self.orientation)
@@ -316,7 +317,7 @@ impl Subcube {
         }
 
         // Transform subcube from a no-rotation, unit cube with its origin at the lower-front-left corner
-        let segment_model = Matrix4::one()
+        let segment_model = Matrix4::identity()
             .translate_v(&self.segment)
             .scale_s(self.subcube_length)
             .translate_s(-0.5);
@@ -362,7 +363,7 @@ impl Subcube {
         self.angular_momentum = Zero::zero();
     }
 
-    fn approach_original_arrangement(&mut self, frac: f32) {
+    fn approach_original_arrangement(&mut self, _frac: f32) {
         let target_subcube = Subcube::from_segment(self.segment, self.subcube_length);
 
         // TODO - figure out the math on this (using frac)

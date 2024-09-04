@@ -1,7 +1,7 @@
 ///! Note that "Physics" is in massive quotation marks.
 ///! This does not aim to be a realistic MKS physics simulation.
 
-use cgmath::{Quaternion, Point3, Vector3, BaseFloat, InnerSpace};
+use cgmath::{Quaternion, Vector3, BaseFloat, InnerSpace};
 use num::traits::{Float, Zero, One};
 
 fn integrate_decay<T: Float + One>(decay: T, time: T) -> T {
@@ -51,19 +51,5 @@ impl<T: BaseFloat> QuaternionMotion<T> {
         let d_quaternion = q_angular_momentum * self.quaternion;
         self.quaternion = (self.quaternion + d_quaternion).normalize();
         self.angular_momentum = self.angular_momentum * integrate_decay(self.decay, frac);
-    }
-}
-
-pub struct PointMotion<T: BaseFloat> {
-    pub point: Point3<T>,
-    pub velocity: Vector3<T>,
-    /// How much `velocity` will be reduced by every second as a percentage.
-    /// Ranges from 0 to 1. 0 is no decay, 1 is complete decay after 1 second.
-    pub decay: T
-}
-impl<T: BaseFloat> PointMotion<T> {
-    pub fn step(&mut self, frac: T) {
-        self.point += self.velocity * frac;
-        self.velocity *= integrate_decay(self.decay, frac);
     }
 }

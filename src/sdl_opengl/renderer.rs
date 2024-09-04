@@ -78,7 +78,7 @@ impl Renderer {
                     let model = subcube.get_model_matrix();
 
                     let hovered = match step_result.selected_subcube {
-                        Some(selected_idx) => (idx == selected_idx),
+                        Some(selected_idx) => idx == selected_idx,
                         None => false
                     };
 

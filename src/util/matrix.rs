@@ -18,13 +18,7 @@ pub trait MatrixBuilder<S: Copy, V, Q>: Sized {
     }
 }
 
-// I can't figure out generics right now
-// I'm always getting cryptic "the parameter type `S` may not live long enough" errors
-// Why, though?! BaseFloat should satisfy every trait that's used by Vector3...
-// type S = f32;
-
 impl<S: BaseFloat> MatrixBuilder<S, Vector3<S>, Quaternion<S>> for Matrix4<S> {
-// impl MatrixBuilder<S, Vector3<S>, Quaternion<S>> for Matrix4<S> {
     fn scale(&self, x: S, y: S, z: S) -> Matrix4<S> {
         self.scale_v(&Vector3::new(x,y,z))
     }

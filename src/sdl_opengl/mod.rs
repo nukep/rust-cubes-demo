@@ -1,6 +1,5 @@
 use sdl2;
 use gl;
-use std::time;
 use std::time::{UNIX_EPOCH, SystemTime, Duration};
 use crate::game::{GameState, GameInput, GameStepResult};
 use std::collections::HashSet;

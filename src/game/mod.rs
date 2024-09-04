@@ -5,6 +5,11 @@ extern crate num;
 pub mod cube;
 mod physics;
 
+use cgmath::prelude::*;
+use cgmath::{Vector3, Vector4, Point3};
+use collision::{Ray, Ray3};
+use crate::util::matrix::MatrixBuilder;
+
 use self::cube::Cube;
 
 /// GameState describes all non-derivable data required to present a frame.
@@ -44,8 +49,6 @@ impl GameInput {
 
 impl GameState {
     pub fn new() -> GameState {
-        use cgmath::{Vector3, Rotation};
-
         GameState {
             cube: Cube::new(),
             show_outlines: true,
@@ -89,7 +92,6 @@ impl GameState {
         {
             let (x,y) = input.rotate_view;
             if (x,y) != (0.0,0.0) {
-                use cgmath::Vector3;
                 let ang = Vector3::new(-y, x, 0.0) * 32.0;
                 self.orientation.angular_momentum = ang;
             }
@@ -107,9 +109,6 @@ impl GameState {
     }
 
     fn solve_selected_subcube(&self, projection_view: cgmath::Matrix4<f32>, pointer: Option<(f32, f32)>) -> Option<usize> {
-        use cgmath::{Vector4, Point3, SquareMatrix, InnerSpace};
-        use collision::{Ray, Ray3};
-
         let mouse_ray: Option<Ray3<f32>> = match pointer {
             Some((x, y)) => {
                 // From NDC to world coordinates
@@ -139,8 +138,6 @@ impl GameState {
     }
 
     fn solve_projection_view(&self, viewport: (i32,i32)) -> cgmath::Matrix4<f32> {
-        use crate::util::matrix::MatrixBuilder;
-        use cgmath::One;
         let viewport_aspect = match viewport {
             (width, height) => width as f32 / height as f32
         };
@@ -151,7 +148,7 @@ impl GameState {
             far: 100.0
         }.into();
 
-        let view = cgmath::Matrix4::one()
+        let view = cgmath::Matrix4::identity()
             .translate(0.0, 0.0, -1.0 + -(5.0f32.powf(self.zoom.scalar)))
             .quaternion(&self.orientation.quaternion);
 
