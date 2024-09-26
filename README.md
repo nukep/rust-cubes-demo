@@ -19,25 +19,23 @@ Use your mouse to hover over and explode subcubes.
 ![Screenshot 2](screenshots/screenshot2.png)
 
 ## Build instructions
-It is recommended you [install Rust nightly](http://www.rust-lang.org/install.html)
-and Cargo on your machine.
-An easy way to do this on Linux and OS X is by entering the following:
 
-```bash
-    curl -s https://static.rust-lang.org/rustup.sh | sudo sh
-```
+Install Rust and Cargo using rustup: https://www.rust-lang.org/learn/get-started
 
 You need the SDL2 binaries on your system, as this is a non-Rust dependency.
 
-* Windows: Download SDL2.dll [here](https://www.libsdl.org/download-2.0.php) and place it on the project's root.
+* Windows: Download SDL2.dll [here](https://github.com/libsdl-org/SDL/releases/) and place it on the project's root.
 * Ubuntu/Debian: `sudo apt-get install libsdl2-dev`
-* Mac OS X: `brew install sdl2` (make sure you have [Homebrew](http://brew.sh/) installed)
+* Fedora/Rocky: `sudo dnf install SDL2-devel`
 
-Then run cargo on the project's root:
+Then build the project and run it:
 
-`cargo build --release`
+```sh
+cargo build
+cargo run
+```
 
-## My impression of Rust
+## My impression of Rust (2015)
 
 The experience I had with Rust was mostly pleasant.
 It's a serious breath of fresh air, having done similar projects in C++.
