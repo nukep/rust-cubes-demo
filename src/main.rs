@@ -14,7 +14,7 @@ pub mod game;
 pub mod util;
 
 pub fn main() {
-    let mut sdl_game = match sdl_opengl::Game::new(800, 600) {
+    let mut sdl_game = match sdl_opengl::Game::new(1920, 1080) {
         Ok(sdl_game) => sdl_game,
         Err(msg) => panic!("sdl_opengl::Game::new: {}", msg)
     };
