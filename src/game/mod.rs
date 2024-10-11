@@ -1,5 +1,4 @@
 extern crate cgmath;
-extern crate rand;
 extern crate num;
 
 pub mod cube;

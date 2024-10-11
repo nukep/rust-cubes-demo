@@ -1,14 +1,13 @@
 [package]
-
 name = "rust-cubes-demo"
-version = "0.0.2"
+version = "0.1.0"
 authors = ["Danny Spencer <dan.spencer.np@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-sdl2 = "0.37.0"
-gl = "0.14.0"
+miniquad = { version = "0.4.6", features = ["log-impl"] }
+glam = "0.29.0"
 cgmath = "0.17.0"
-rand = "0.8.5"
+quad-rand = "0.2.2"
 num = "0.4.3"
 collision = "0.20.1"

@@ -1,7 +1,4 @@
 use std;
-use rand;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
 
 use cgmath::prelude::*;
 use cgmath::{Vector3, Quaternion};
@@ -20,7 +17,6 @@ enum CubeState {
 
 pub struct Cube {
     pub subcubes: Vec<Subcube>,
-    pub rng: StdRng,
     state: CubeState
 }
 
@@ -41,7 +37,6 @@ impl Cube {
 
         Cube {
             subcubes: subcubes,
-            rng: StdRng::from_entropy(),
             state: CubeState::Simulating
         }
     }
@@ -65,7 +60,7 @@ impl Cube {
         self.try_on_simulating(|_self| {
             let origin = Vector3::from_value(0.0);
             for subcube in _self.subcubes.iter_mut() {
-                subcube.hurl(force, &origin, &mut _self.rng);
+                subcube.hurl(force, &origin);
             }
         });
     }
@@ -128,7 +123,7 @@ impl Cube {
         let subcubes_idx = self.subdivide_subcube(index, subdivide_count);
         for &subcube_idx in subcubes_idx.iter() {
             let subcube = &mut self.subcubes[subcube_idx];
-            subcube.hurl(force, &origin, &mut self.rng);
+            subcube.hurl(force, &origin);
         }
     }
 
@@ -139,7 +134,7 @@ impl Cube {
             // Still hurl the subcube
             let s = &mut self.subcubes[index];
             let origin = s.pos;
-            s.hurl(force, &origin, &mut self.rng);
+            s.hurl(force, &origin);
         }
     }
 
@@ -340,18 +335,15 @@ impl Subcube {
     /// Add velocity and angular momentum to the subcube.
     ///
     /// The subcube will tend to repel from the specified origin.
-    /// Some psudo-random variance will also be added to the velocity and angular momentum using the specified RNG.
-    pub fn hurl<RNG: rand::Rng>(&mut self, force: f32, origin: &Vector3<f32>, rng: &mut RNG) {
-        fn random_vector3<RNG: rand::Rng>(rng: &mut RNG) -> Vector3<f32> {
-            fn rand<RNG: rand::Rng>(rng: &mut RNG) -> f32 {
-                rng.gen_range(-1.0..=1.0)
-            }
-            Vector3::new(rand(rng), rand(rng), rand(rng))
+    /// Some psudo-random variance will also be randomly added to the velocity and angular momentum.
+    pub fn hurl(&mut self, force: f32, origin: &Vector3<f32>) {
+        fn random_vector3() -> Vector3<f32> {
+            Vector3::new(quad_rand::gen_range(-1.0, 1.0), quad_rand::gen_range(-1.0, 1.0), quad_rand::gen_range(-1.0, 1.0))
         }
 
         let v = (self.pos - origin) * (16.0);
-        self.vel = (v + random_vector3(rng) * (4.0)) * (force*0.1);
-        self.angular_momentum = (v + random_vector3(rng) * (0.5)) * (force*0.5);
+        self.vel = (v + random_vector3() * (4.0)) * (force*0.1);
+        self.angular_momentum = (v + random_vector3() * (0.5)) * (force*0.5);
     }
 
     fn reset(&mut self) {

@@ -1,8 +1,10 @@
-#version 130
+#version 100
+precision highp float;
 
-in vec3 position;
-out vec3 fragment_coord;
-out vec3 npos;
+attribute vec3 position;
+varying vec3 fragment_coord;
+varying vec3 npos;
+
 uniform mat4 projection_view;
 uniform mat4 model;
 

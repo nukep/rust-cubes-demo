@@ -1,8 +1,8 @@
-#version 130
+#version 100
+precision highp float;
 
-in vec3 fragment_coord;
-in vec3 npos;
-out vec3 color;
+varying vec3 fragment_coord;
+varying vec3 npos;
 
 uniform bool show_outlines;
 uniform bool hovered;
@@ -42,5 +42,5 @@ void main(void) {
         // tint red if hovered
         rgb = mix(vec3(0.9, 0.25, 0.25), vec3(1.0), rgb);
     }
-    color = rgb;
+    gl_FragColor = vec4(rgb, 1.0);
 }
