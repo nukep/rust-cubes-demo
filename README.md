@@ -1,5 +1,7 @@
-This is a simple tech demo I wrote so I could learn Rust.
-It utilizes OpenGL 3 and SDL2.
+# Rust Cubes Demo
+
+This is a simple tech demo I wrote so I could learn Rust back in 2015.
+It originally used SDL2 and OpenGL 3, but now uses [miniquad](https://github.com/not-fl3/miniquad/) and is OpenGL ES compatible. As a result, it now run in WebAssembly!
 
 ## Controls
 
@@ -21,12 +23,6 @@ Use your mouse to hover over and explode subcubes.
 ## Build instructions
 
 Install Rust and Cargo using rustup: https://www.rust-lang.org/learn/get-started
-
-You need the SDL2 binaries on your system, as this is a non-Rust dependency.
-
-* Windows: Download SDL2.dll [here](https://github.com/libsdl-org/SDL/releases/) and place it on the project's root.
-* Ubuntu/Debian: `sudo apt-get install libsdl2-dev`
-* Fedora/Rocky: `sudo dnf install SDL2-devel`
 
 Then build the project and run it:
 
