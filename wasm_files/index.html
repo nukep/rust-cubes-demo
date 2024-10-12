@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Rust Cubes Demo</title>
+    <style>
+        body {
+            font-family:Arial, Helvetica, sans-serif
+        }
+        html,
+        body,
+        canvas {
+            margin: 0px;
+            padding: 0px;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: rgb(0, 0, 0);
+            z-index: 0;
+        }
+        .info-container {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 100;
+            width: 100%;
+            height: 100%;
+            margin: 1em;
+
+            pointer-events: none;
+        }
+        .info {
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            display: inline-block;
+            padding: 1em;
+            border-radius: 2em;
+        }
+        .clickable {
+            pointer-events: auto;
+        }
+        a {
+            color: white;
+        }
+        ul {
+            font-size: 0.8em;
+            list-style-type: none;
+        }
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="glcanvas" tabindex='1'></canvas>
+    <div class="info-container">
+        <div class="info">
+            <div class="clickable">
+                <div style="margin: 1em;">
+                    <button id="visibility-toggle">Hide info</button>
+                </div>
+            </div>
+            <div id="info-contents">
+                <div class="clickable">
+                    <img src="github.svg" style="height: 1em" /> <a href="https://github.com/nukep/rust-cubes-demo" target="_blank">GitHub repository</a> &mdash; Danny Spencer
+                </div>
+                <ul>
+                    <li>Left click: Explode (subdivide) hovered subcube</li>
+                    <li>Right click: Rearrange all subcubes into their original positions</li>
+                    <li>Middle drag: Rotate view</li>
+                    <li>Mouse wheel: Zoom in/out</li>
+                    <li>Space: Hurl all subcubes outward</li>
+                    <li>"O" key: Toggle outlines</li>
+                    <li>"R" key: Reset to a single subcube</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- Minified and statically hosted version of https://github.com/not-fl3/miniquad/blob/master/native/sapp-wasm/js/gl.js -->
+    <script src="gl.js"></script>
+    <script>load("rust-cubes-demo.wasm");</script> <!-- Your compiled wasm file -->
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        const visibilityToggleButton = document.getElementById("visibility-toggle")
+        const infoContents = document.getElementById("info-contents")
+
+        visibilityToggleButton.addEventListener('click', event => {
+            infoContents.classList.toggle('hide')
+            if (infoContents.classList.contains('hide')) {
+                visibilityToggleButton.textContent = 'Show info'
+            } else {
+                visibilityToggleButton.textContent = 'Hide info'
+            }
+        })
+    </script>
+</body>
+
+</html>
