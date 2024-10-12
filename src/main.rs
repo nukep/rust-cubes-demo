@@ -10,12 +10,25 @@ pub mod util;
 
 use game::{GameState, GameStepResult, GameInput};
 
+// How much dragging the view affects rotation
+#[cfg(target_arch = "wasm32")]
+static DRAG_COEFF: f32 = 2.0;
+#[cfg(not(target_arch = "wasm32"))]
+static DRAG_COEFF: f32 = 8.0;
+
+// How much scrolling the view affects zoom
+#[cfg(target_arch = "wasm32")]
+static ZOOM_COEFF: f32 = 1.0/100.0;
+#[cfg(not(target_arch = "wasm32"))]
+static ZOOM_COEFF: f32 = 0.5;
+
 struct Stage {
     ctx: Box<dyn RenderingBackend>,
     pipeline: Pipeline,
     bindings: Bindings,
 
     input: GameInput,
+    drag_last: Option<(f32, f32)>,
     game_state: GameState,
     game_step_result: Option<GameStepResult>
 }
@@ -83,9 +96,18 @@ impl Stage {
             pipeline,
             bindings,
             input: GameInput::new(),
+            drag_last: None,
             game_state: GameState::new(),
             game_step_result: None
         }
+    }
+
+    // Change to -1 to 1 coordinates, where 0 is the center
+    fn window_to_ndc_coordinates(x: f32, y: f32) -> (f32, f32) {
+        let (width, height) = window::screen_size();
+        let x = (x/width)*2.0 - 1.0;
+        let y = -((y/height)*2.0 - 1.0);
+        return (x, y)
     }
 }
 
@@ -153,22 +175,35 @@ impl EventHandler for Stage {
         self.ctx.commit_frame();
     }
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        // change to -1 to 1 coordinates, where 0 is the center
-        let (width, height) = window::screen_size();
-        self.input.pointer = Some(( (x/width)*2.0 - 1.0, -((y/height)*2.0 - 1.0) ));
+        let (x, y) = Stage::window_to_ndc_coordinates(x, y);
+        self.input.pointer = Some((x, y));
+
+        if let Some((lastx, lasty)) = self.drag_last {
+            self.input.rotate_view = ((x - lastx) * DRAG_COEFF, (y - lasty) * DRAG_COEFF);
+            self.drag_last = Some((x, y));
+        } else {
+            self.input.rotate_view = (0.0, 0.0)
+        }
     }
 
-    fn mouse_button_down_event(&mut self, button: MouseButton, _x: f32, _y: f32) {
+    fn mouse_button_down_event(&mut self, button: MouseButton, x: f32, y: f32) {
         if button == MouseButton::Left {
             self.input.explode_subcube = true;
         }
         if button == MouseButton::Right {
             self.input.rearrange = true;
         }
+        if button == MouseButton::Middle {
+            self.input.rotate_view = (0.0, 0.0);
+            self.drag_last = Some(Stage::window_to_ndc_coordinates(x, y));
+        }
     }
     fn mouse_button_up_event(&mut self, button: MouseButton, _x: f32, _y: f32) {
         if button == MouseButton::Left {
             self.input.explode_subcube = false;
+        }
+        if button == MouseButton::Middle {
+            self.drag_last = None;
         }
     }
     fn char_event(&mut self, c: char, _keymods: KeyMods, _repeat: bool) {
@@ -185,7 +220,7 @@ impl EventHandler for Stage {
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         // +Y zooms in, -Y zooms out
-        self.input.zoom_view_change = (y as f32) * 0.5;
+        self.input.zoom_view_change = (y as f32) * ZOOM_COEFF;
     }
 }
 
