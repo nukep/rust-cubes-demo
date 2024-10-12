@@ -66,7 +66,7 @@
             </div>
             <div id="info-contents">
                 <div class="clickable">
-                    <img src="github.svg" style="height: 1em" /> <a href="https://github.com/nukep/rust-cubes-demo" target="_blank">GitHub repository</a> &mdash; Danny Spencer
+                    <img src="github.svg" style="height: 1em" /> <a href="https://github.com/nukep/rust-cubes-demo" id="repolink" target="_blank">GitHub repository</a> &mdash; Danny Spencer
                 </div>
                 <ul>
                     <li>Left click: Explode (subdivide) hovered subcube</li>
@@ -87,6 +87,7 @@
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         const visibilityToggleButton = document.getElementById("visibility-toggle")
+        const repoLink = document.getElementById("repolink")
         const infoContents = document.getElementById("info-contents")
 
         visibilityToggleButton.addEventListener('click', event => {
@@ -96,6 +97,14 @@
             } else {
                 visibilityToggleButton.textContent = 'Hide info'
             }
+        })
+
+        // Prevent the button and repo link from stealing focus
+        visibilityToggleButton.addEventListener('mousedown', e => {
+            e.preventDefault()
+        })
+        repoLink.addEventListener('mousedown', e => {
+            e.preventDefault()
         })
     </script>
 </body>
