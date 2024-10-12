@@ -1,9 +1,6 @@
-use std::mem::swap;
-
-use cgmath::Matrix4;
 use miniquad::*;
 
-use glam::{vec3, Mat4, Vec3};
+use glam::{Mat4, Vec3};
 
 pub mod game;
 pub mod util;
@@ -218,7 +215,7 @@ impl EventHandler for Stage {
             self.input.toggle_show_outlines = true;
         }
     }
-    fn mouse_wheel_event(&mut self, x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, _x: f32, y: f32) {
         // +Y zooms in, -Y zooms out
         self.input.zoom_view_change = (y as f32) * ZOOM_COEFF;
     }
