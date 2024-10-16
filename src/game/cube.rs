@@ -210,21 +210,18 @@ impl Cube {
             let mut closest: Option<f32> = None;
 
             for plane in PLANES.iter() {
-                match plane.intersection(ray) {
-                    Some(point) => {
-                        let Point3{x, y, z} = point;
+                if let Some(point) = plane.intersection(ray) {
+                    let Point3{x, y, z} = point;
 
-                        match (x, y, z) {
-                            // Intersected point must be within bounds
-                            (-0.5..=0.5, -0.5..=0.5, -0.5..=0.5) => {
-                                let diff = point - ray.origin;
-                                closest.set_if_smallest(diff.magnitude());
-                            },
-                            _ => ()
-                        }
-                    },
-                    None => ()
-                };
+                    match (x, y, z) {
+                        // Intersected point must be within bounds
+                        (-0.5..=0.5, -0.5..=0.5, -0.5..=0.5) => {
+                            let diff = point - ray.origin;
+                            closest.set_if_smallest(diff.magnitude());
+                        },
+                        _ => ()
+                    }
+                }
             }
 
             closest
@@ -260,13 +257,10 @@ impl Cube {
                 Ray::new(q.rotate_point(origin), q.rotate_vector(ray.direction))
             };
 
-            match intersects_with_unit_cube(&new_ray) {
-                Some(dist) => {
-                    assert!(dist >= 0.0);
-                    closest_subcube.set_if_smallest(SubcubeDistance(index, subcube, dist*subcube.subcube_length));
-                },
-                None => ()
-            };
+            if let Some(dist) = intersects_with_unit_cube(&new_ray) {
+                assert!(dist >= 0.0);
+                closest_subcube.set_if_smallest(SubcubeDistance(index, subcube, dist*subcube.subcube_length));
+            }
         }
 
         match closest_subcube {

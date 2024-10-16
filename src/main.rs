@@ -134,7 +134,7 @@ impl EventHandler for Stage {
         let show_outlines = if self.game_state.show_outlines { 1 } else { 0 };
 
         self.ctx.begin_default_pass(Default::default());
-        self.ctx.clear(Some((0., 0., 0.5, 1.)), None, None);
+        self.ctx.clear(Some((0., 0., 0.25, 1.)), None, None);
         self.ctx.apply_pipeline(&self.pipeline);
         self.ctx.apply_bindings(&self.bindings);
 

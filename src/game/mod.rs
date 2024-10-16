@@ -1,12 +1,9 @@
-extern crate cgmath;
-extern crate num;
-
 pub mod cube;
 mod physics;
 
 use cgmath::prelude::*;
 use cgmath::{Vector3, Vector4, Point3};
-use collision::{Ray, Ray3};
+use collision::Ray;
 use crate::util::matrix::MatrixBuilder;
 
 use self::cube::Cube;
@@ -78,9 +75,8 @@ impl GameState {
         let selected_subcube = self.solve_selected_subcube(projection_view, input.pointer);
 
         if input.explode_subcube {
-            match selected_subcube {
-                Some(s) => self.cube.explode_subcube_if_at_least(s, 4.0, 2, 1.0/16.0),
-                None => ()
+            if let Some(s) = selected_subcube {
+                self.cube.explode_subcube_if_at_least(s, 4.0, 2, 1.0/16.0);
             }
         }
 
@@ -108,32 +104,23 @@ impl GameState {
     }
 
     fn solve_selected_subcube(&self, projection_view: cgmath::Matrix4<f32>, pointer: Option<(f32, f32)>) -> Option<usize> {
-        let mouse_ray: Option<Ray3<f32>> = match pointer {
-            Some((x, y)) => {
-                // From NDC to world coordinates
-                let post_project_v1 = Vector4::new(x, y, -1.0, 1.0);
-                let post_project_v2 = Vector4::new(x, y, 1.0, 1.0);
-
-                let inv_projection_view = projection_view.invert().expect("Could not invert projection view");
-                let pre_project_p1 = Point3::from_homogeneous(inv_projection_view * post_project_v1);
-                let pre_project_p2 = Point3::from_homogeneous(inv_projection_view * post_project_v2);
-
-                let direction = (pre_project_p2 - pre_project_p1).normalize();
-
-                Some(Ray::new(pre_project_p1, direction))
-            },
-            None => None
+        let Some((x, y)) = pointer else {
+            return None;
         };
 
-        match mouse_ray {
-            Some(ref ray) => {
-                match self.cube.get_subcube_from_ray(ray) {
-                    Some((index, _)) => Some(index),
-                    None => None
-                }
-            },
-            None => None
-        }
+        // From NDC to world coordinates
+        let post_project_v1 = Vector4::new(x, y, -1.0, 1.0);
+        let post_project_v2 = Vector4::new(x, y, 1.0, 1.0);
+
+        let inv_projection_view = projection_view.invert().expect("Could not invert projection view");
+        let pre_project_p1 = Point3::from_homogeneous(inv_projection_view * post_project_v1);
+        let pre_project_p2 = Point3::from_homogeneous(inv_projection_view * post_project_v2);
+
+        let direction = (pre_project_p2 - pre_project_p1).normalize();
+
+        let mouse_ray = Ray::new(pre_project_p1, direction);
+
+        self.cube.get_subcube_from_ray(&mouse_ray).map(|(index, _)| index)
     }
 
     fn solve_projection_view(&self, viewport: (i32,i32)) -> cgmath::Matrix4<f32> {
